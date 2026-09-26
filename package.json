@@ -1,6 +1,6 @@
 {
   "name": "artic-tempest-website",
-  "version": "1.11.45",
+  "version": "1.11.46",
   "author": "Zatoshi",
   "description": "Artictempest Project Website",
   "private": true,
@@ -73,9 +73,9 @@
     "next-themes": "^0.4.6",
     "pg": "^8.22.0",
     "radix-ui": "^1.6.7",
-    "react": "^19.2.8",
+    "react": "^19.3.0",
     "react-arborist": "^3.16.0",
-    "react-dom": "^19.2.8",
+    "react-dom": "^19.3.0",
     "react-markdown": "^10.1.0",
     "react-selecto": "^1.26.3",
     "recharts": "^3.10.1",
@@ -87,7 +87,7 @@
     "tippy.js": "^6.3.7",
     "utf-8-validate": "^6.0.6",
     "ws": "^8.21.2",
-    "zod": "^4.4.3"
+    "zod": "^4.6.5"
   },
   "devDependencies": {
     "@next/bundle-analyzer": "^16.3.0",
@@ -95,8 +95,8 @@
     "@tailwindcss/postcss": "^4.3.3",
     "@testing-library/react": "^16.3.2",
     "@types/node": "^25.9.5",
-    "@types/react": "^19.2.18",
-    "@types/react-dom": "^19.2.4",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
     "@vercel/toolbar": "0.2.7",
     "babel-plugin-react-compiler": "^1.0.0",
     "cross-env": "^10.1.0",
