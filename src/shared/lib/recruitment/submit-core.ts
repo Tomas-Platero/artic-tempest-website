@@ -18,6 +18,8 @@ export type SubmitApplicationParams = {
 	simulate?: boolean;
 	discordChannelId?: string;
 	internalAdmin?: boolean;
+	/** Marks self-test/cron submissions so the bot skips the applicant DM. */
+	isTest?: boolean;
 };
 
 export type SubmitApplicationResult =
@@ -34,6 +36,7 @@ export async function submitApplicationCore(
 		simulate = false,
 		discordChannelId,
 		internalAdmin = false,
+		isTest = false,
 	} = params;
 
 	try {
@@ -306,6 +309,7 @@ export async function submitApplicationCore(
 					characterName: normalizedName,
 					characterRealm: normalizedRealm,
 					status: application.status,
+					...(isTest ? { isTest: true } : {}),
 				});
 			}
 		}

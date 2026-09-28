@@ -28,6 +28,8 @@ export type RecruitmentBotEvent =
       characterName: string;
       characterRealm: string;
       status: string;
+      /** True when the application was created by the recruitment self-test/cron; the bot must not DM the applicant. */
+      isTest?: boolean;
     }
   | {
       type: 'recruitment.chat.applicant_reply';

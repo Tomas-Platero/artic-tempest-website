@@ -3,6 +3,7 @@ import { z } from "zod";
 import { auth } from "@/auth";
 import { getAuthzSnapshot } from "@/shared/auth/authz";
 import { apiErrorResponse } from "@/shared/api/errors";
+import { supabaseAdmin } from "@/shared/lib/supabase-admin";
 import { submitApplicationCore } from "@/shared/lib/recruitment/submit-core";
 
 export const dynamic = "force-dynamic";
@@ -32,6 +33,21 @@ export async function POST(req: Request) {
 
 		const authz = await getAuthzSnapshot(session);
 
+		// Submissions targeting the configured self-test channel are test runs: the
+		// bot must not DM the applicant for them. Real apply submissions never send
+		// discord_channel_id, so this costs no extra query on the public path.
+		let isTest = false;
+		if (parsed.data.discord_channel_id) {
+			const { data: testSettings } = await supabaseAdmin
+				.from("settings")
+				.select("recruitment_test_channel_id")
+				.eq("id", 1)
+				.maybeSingle();
+			isTest =
+				testSettings?.recruitment_test_channel_id?.trim() ===
+				parsed.data.discord_channel_id.trim();
+		}
+
 		const result = await submitApplicationCore({
 			userId: session.user.id,
 			selectedChar: parsed.data.selectedChar,
@@ -39,6 +55,7 @@ export async function POST(req: Request) {
 			simulate: parsed.data.simulate,
 			discordChannelId: parsed.data.discord_channel_id,
 			internalAdmin: authz.route.internalAdmin,
+			isTest,
 		});
 
 		if (!result.ok) {

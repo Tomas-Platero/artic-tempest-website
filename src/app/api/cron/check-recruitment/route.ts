@@ -160,6 +160,7 @@ export async function GET(req: Request) {
 				simulate: false,
 				discordChannelId: testChannelId,
 				internalAdmin: false,
+				isTest: true,
 			});
 
 			if (!result.ok) {
