@@ -10,6 +10,7 @@ import {
 	type RaiderIoGuildBossKillRosterEntry,
 	type RaiderIoLiveBoss,
 } from "@/shared/integrations/raiderio/raiderio-client";
+import { toRaiderIoRealmSlug } from "@/shared/integrations/wow-realm-slug";
 
 const DIFFICULTIES = [
 	{ key: "mythic", label: "M" },
@@ -64,7 +65,7 @@ async function fetchRaidProgressionInternal() {
 		if (!guild) return [];
 
 		const region = guild.region.toLowerCase();
-		const realmSlug = guild.realm.toLowerCase().replace(/\s+/g, "-");
+		const realmSlug = toRaiderIoRealmSlug(guild.realm);
 
 		const [
 			rioData,
@@ -601,7 +602,7 @@ async function fetchRaidTimelineInternal(
 		if (!guild) return null;
 
 		const region = guild.region.toLowerCase();
-		const realmSlug = guild.realm.toLowerCase().replace(/\s+/g, "-");
+		const realmSlug = toRaiderIoRealmSlug(guild.realm);
 		const difficulties: ("mythic" | "heroic" | "normal")[] = [
 			"mythic",
 			"heroic",

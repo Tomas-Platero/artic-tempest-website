@@ -1,6 +1,8 @@
 // src/shared/integrations/raiderio/raiderio-client.ts
 // Raider.io public API client for guild progression
 
+import { toRaiderIoRealmSlug } from "@/shared/integrations/wow-realm-slug";
+
 export type RaidProgression = {
 	summary: string;
 	total_bosses: number;
@@ -224,7 +226,7 @@ export async function fetchGuildProgression(
 	region: string = "eu",
 ): Promise<RaiderIoGuildProfile | null> {
 	// Raider.io expects the name with spaces or URL-encoded (e.g. "Artic%20Tempest")
-	const url = `https://raider.io/api/v1/guilds/profile?region=${region}&realm=${realmSlug}&name=${encodeURIComponent(guildName)}&fields=raid_progression`;
+	const url = `https://raider.io/api/v1/guilds/profile?region=${region}&realm=${encodeURIComponent(realmSlug)}&name=${encodeURIComponent(guildName)}&fields=raid_progression`;
 
 	try {
 		// We cache the result for 1 hour to avoid hitting rate limits
@@ -276,7 +278,7 @@ export async function fetchCharacterRIO(
 	realm: string,
 	region: string = "eu",
 ): Promise<any> {
-	const realmSlug = realm.toLowerCase().trim().replace(/\s+/g, "-");
+	const realmSlug = toRaiderIoRealmSlug(realm);
 	const seasons = [
 		"current",
 		"season-mn-2",
@@ -291,7 +293,7 @@ export async function fetchCharacterRIO(
 	const raidField =
 		"raid_progression:sporefall:tier-mn-1:the-venomous-abyss:the-tidebound-grotto:manaforge-omega:liberation-of-undermine:nerubar-palace:amirdrassil-the-dreams-hope:aberrus-the-shadowed-crucible:vault-of-the-incarnates:sepulcher-of-the-first-ones:sanctum-of-domination:castle-nathria";
 	const seasonField = `mythic_plus_scores_by_season:${seasons.join(":")}`;
-	const url = `https://raider.io/api/v1/characters/profile?region=${region}&realm=${realmSlug}&name=${encodeURIComponent(name)}&fields=guild,${seasonField},${raidField},active_spec_name,gear`;
+	const url = `https://raider.io/api/v1/characters/profile?region=${region}&realm=${encodeURIComponent(realmSlug)}&name=${encodeURIComponent(name)}&fields=guild,${seasonField},${raidField},active_spec_name,gear`;
 
 	try {
 		const res = await fetchWithTimeout(url, { next: { revalidate: 3600 } });
@@ -325,7 +327,7 @@ export async function fetchGuildLiveRaidProgress({
 	difficulty = "mythic",
 	revalidate = 30,
 }: LiveTrackingOptions): Promise<RaiderIoLiveRaidProgress | null> {
-	const url = `https://raider.io/api/v1/live-tracking/guild/raid-progress?region=${region}&realm=${realmSlug}&guild=${encodeURIComponent(
+	const url = `https://raider.io/api/v1/live-tracking/guild/raid-progress?region=${region}&realm=${encodeURIComponent(realmSlug)}&guild=${encodeURIComponent(
 		guildName,
 	)}&raid=${raidSlug}&difficulty=${difficulty}`;
 
@@ -387,7 +389,7 @@ function normalizeGuildBossKill(
 							character?.profileUrl ??
 							character?.profile_url ??
 							(name && realmSlug
-								? `https://raider.io/characters/${region}/${realmSlug}/${encodeURIComponent(name)}`
+								? `https://raider.io/characters/${region}/${encodeURIComponent(realmSlug)}/${encodeURIComponent(name)}`
 								: null);
 
 						acc.push({
@@ -416,7 +418,7 @@ export async function fetchGuildBossKill({
 	difficulty = "mythic",
 	revalidate = 120,
 }: BossTrackingOptions): Promise<RaiderIoGuildBossKill | null> {
-	const url = `https://raider.io/api/v1/guilds/boss-kill?region=${region}&realm=${realmSlug}&guild=${encodeURIComponent(
+	const url = `https://raider.io/api/v1/guilds/boss-kill?region=${region}&realm=${encodeURIComponent(realmSlug)}&guild=${encodeURIComponent(
 		guildName,
 	)}&raid=${raidSlug}&boss=${bossSlug}&difficulty=${difficulty}`;
 
@@ -446,7 +448,7 @@ export async function fetchGuildBossProgress({
 	difficulty = "mythic",
 	revalidate = 120,
 }: BossTrackingOptions): Promise<RaiderIoGuildBossProgress | null> {
-	const url = `https://raider.io/api/v1/live-tracking/guild/boss-progress?region=${region}&realm=${realmSlug}&guild=${encodeURIComponent(
+	const url = `https://raider.io/api/v1/live-tracking/guild/boss-progress?region=${region}&realm=${encodeURIComponent(realmSlug)}&guild=${encodeURIComponent(
 		guildName,
 	)}&raid=${raidSlug}&boss=${bossSlug}&difficulty=${difficulty}`;
 
@@ -476,7 +478,7 @@ export async function fetchGuildBossPulls({
 	difficulty = "mythic",
 	revalidate = 120,
 }: BossTrackingOptions): Promise<RaiderIoGuildBossPull[] | null> {
-	const url = `https://raider.io/api/v1/live-tracking/guild/boss-pulls?region=${region}&realm=${realmSlug}&guild=${encodeURIComponent(
+	const url = `https://raider.io/api/v1/live-tracking/guild/boss-pulls?region=${region}&realm=${encodeURIComponent(realmSlug)}&guild=${encodeURIComponent(
 		guildName,
 	)}&raid=${raidSlug}&boss=${bossSlug}&difficulty=${difficulty}`;
 

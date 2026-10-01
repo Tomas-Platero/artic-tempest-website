@@ -126,14 +126,9 @@ export async function POST(req: Request) {
     );
 
     // Obtener el Item Level real directamente desde Battle.net
-    const realmSlugForBnet = application.character_realm
-      .toLowerCase()
-      .trim()
-      .replace(/\s+/g, '-');
-    const nameSlugForBnet = application.character_name.toLowerCase().trim();
     const bnetItemLevel = await fetchCharacterItemLevel(
-      realmSlugForBnet,
-      nameSlugForBnet,
+      application.character_realm,
+      application.character_name,
       'eu',
     );
 

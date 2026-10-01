@@ -2,6 +2,10 @@
 // Blizzard Battle.net API client using client_credentials OAuth2
 
 import { getGuildCredentials } from '@/shared/auth/credentials';
+import {
+  toBlizzardCharacterName,
+  toBlizzardRealmSlug,
+} from '@/shared/integrations/wow-realm-slug';
 
 /** Cached token */
 let cachedToken: { token: string; expiresAt: number } | null = null;
@@ -52,7 +56,7 @@ export async function fetchCharacterSummary(
   region: string,
   token: string,
 ): Promise<{ spec: string | null; level: number | null } | null> {
-  const url = `https://${region}.api.blizzard.com/profile/wow/character/${realmSlug}/${toSlug(characterNameSlug)}?namespace=profile-${region}&locale=en_US`;
+  const url = `https://${region}.api.blizzard.com/profile/wow/character/${encodeURIComponent(toBlizzardRealmSlug(realmSlug))}/${encodeURIComponent(toBlizzardCharacterName(characterNameSlug))}?namespace=profile-${region}&locale=en_US`;
 
   try {
     const res = await fetch(url, {
@@ -78,7 +82,7 @@ export async function fetchCharacterMedia(
   region: string,
   token: string,
 ): Promise<string | null> {
-  const url = `https://${region}.api.blizzard.com/profile/wow/character/${realmSlug}/${toSlug(characterNameSlug)}/character-media?namespace=profile-${region}&locale=en_US`;
+  const url = `https://${region}.api.blizzard.com/profile/wow/character/${encodeURIComponent(toBlizzardRealmSlug(realmSlug))}/${encodeURIComponent(toBlizzardCharacterName(characterNameSlug))}/character-media?namespace=profile-${region}&locale=en_US`;
 
   try {
     const res = await fetch(url, {
@@ -103,7 +107,7 @@ export async function fetchCharacterProfessions(
   region: string = 'eu',
 ): Promise<any> {
   const token = await getAccessToken();
-  const url = `https://${region}.api.blizzard.com/profile/wow/character/${realmSlug}/${toSlug(characterNameSlug)}/professions?namespace=profile-${region}&locale=en_US`;
+  const url = `https://${region}.api.blizzard.com/profile/wow/character/${encodeURIComponent(toBlizzardRealmSlug(realmSlug))}/${encodeURIComponent(toBlizzardCharacterName(characterNameSlug))}/professions?namespace=profile-${region}&locale=en_US`;
 
   try {
     const res = await fetch(url, {
@@ -125,7 +129,7 @@ export async function fetchCharacterItemLevel(
   region: string = 'eu',
 ): Promise<{ equipped: number; average: number } | null> {
   const token = await getAccessToken();
-  const url = `https://${region}.api.blizzard.com/profile/wow/character/${realmSlug}/${toSlug(characterNameSlug)}?namespace=profile-${region}&locale=en_US`;
+  const url = `https://${region}.api.blizzard.com/profile/wow/character/${encodeURIComponent(toBlizzardRealmSlug(realmSlug))}/${encodeURIComponent(toBlizzardCharacterName(characterNameSlug))}?namespace=profile-${region}&locale=en_US`;
 
   try {
     const res = await fetch(url, {

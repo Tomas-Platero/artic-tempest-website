@@ -6,10 +6,7 @@ import { Button } from "@/shared/ui/button";
 import { IconArrowLeft } from "@/shared/ui/tabler-icons";
 import Link from "next/link";
 import { fetchCharacterRIO } from "@/shared/integrations/raiderio/raiderio-client";
-import {
-	fetchCharacterItemLevel,
-	toSlug,
-} from "@/shared/integrations/bnet/bnet-client";
+import { fetchCharacterItemLevel } from "@/shared/integrations/bnet/bnet-client";
 import { getAppPermission } from "@/shared/auth/permissions";
 import { getAuthzSnapshot } from "@/shared/auth/authz";
 import { Forbidden } from "@/shared/components/forbidden";
@@ -59,7 +56,7 @@ export default async function ApplicationDetailPage({
 
 	const [rioData, bnetData] = await Promise.all([
 		fetchCharacterRIO(charName, charRealm),
-		fetchCharacterItemLevel(toSlug(charRealm), toSlug(charName)),
+		fetchCharacterItemLevel(charRealm, charName),
 	]);
 	return (
 		<div className="flex min-size-full max-w-full flex-col gap-6 p-4 md:p-6 lg:px-8">

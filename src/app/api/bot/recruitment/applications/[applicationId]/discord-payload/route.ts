@@ -56,7 +56,16 @@ export async function GET(
     );
   }
 
-  const announce = new URL(request.url).searchParams.get('announce') === '1' || new URL(request.url).searchParams.get('announce') === 'true';
+  function isAnnounceRequested(url: string): boolean {
+    try {
+      const value = new URL(url).searchParams.get('announce');
+      return value === '1' || value === 'true';
+    } catch {
+      return false;
+    }
+  }
+
+  const announce = isAnnounceRequested(request.url);
 
   try {
     const { data: application, error: appError } = await supabaseAdmin
@@ -120,14 +129,9 @@ export async function GET(
       rioData?.raid_progression,
     );
 
-    const realmSlugForBnet = application.character_realm
-      .toLowerCase()
-      .trim()
-      .replace(/\s+/g, '-');
-    const nameSlugForBnet = application.character_name.toLowerCase().trim();
     const bnetItemLevel = await fetchCharacterItemLevel(
-      realmSlugForBnet,
-      nameSlugForBnet,
+      application.character_realm,
+      application.character_name,
       'eu',
     );
 
