@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.11.48
+
+- fix(bnet, raider.io): la ficha de una solicitud ya carga los datos externos del personaje cuando el reino lleva apóstrofo o acento (ATW-44) — el slug de reino y el nombre del personaje se construían a mano en cada punto de llamada, con reglas distintas y todas incorrectas: Raider.IO recibía `zul'jin` (responde 400) y Battle.net recibía el reino sin acentos (`pozzo-delleternita`, 404) y el nombre sin acentos (`aihar` en vez de `aiharä`, 404), así que cualquier personaje con acento también se quedaba sin datos de Battle.net. Ahora un único módulo compartido (`src/shared/integrations/wow-realm-slug.ts`) aplica en el borde de cada cliente las reglas medidas contra las dos APIs — Blizzard conserva los acentos y elimina el apóstrofo; Raider.IO conserva los acentos y los espacios — e incluye saneo de subrogados sueltos para que un nombre corrupto no haga fallar `encodeURIComponent`.
+- fix(bot): el endpoint de payload de Discord ya no propaga una excepción si la URL de la petición no se puede interpretar — en ese caso omite el anuncio en lugar de devolver un 500.
+
 ## 1.11.47
 
 - fix(reclutamiento): el self-test del cron ya no envía el DM «Solicitud recibida» al aplicante de prueba (ATW-43) — las solicitudes creadas contra el canal de test (`/api/recruitment/self-test` y el cron `check-recruitment`) publican el evento `recruitment.application.created` con `isTest: true`; el bot lo consume igualmente (lo marca procesado, cobertura del test intacta) pero salta el DM al dueño del personaje de prueba. Requiere el cambio correspondiente en `artictempest-bot` ya desplegado.
