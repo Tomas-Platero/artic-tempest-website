@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.11.47
+
+- fix(reclutamiento): el self-test del cron ya no envía el DM «Solicitud recibida» al aplicante de prueba (ATW-43) — las solicitudes creadas contra el canal de test (`/api/recruitment/self-test` y el cron `check-recruitment`) publican el evento `recruitment.application.created` con `isTest: true`; el bot lo consume igualmente (lo marca procesado, cobertura del test intacta) pero salta el DM al dueño del personaje de prueba. Requiere el cambio correspondiente en `artictempest-bot` ya desplegado.
+
 ## 1.11.46
 
 - chore(deps): actualizado el rango seguro de dependencias (ATW-42) — next 16.3.6, @next/third-parties y @next/bundle-analyzer 16.3.6, @sentry/nextjs 10.75.3, @supabase/ssr 0.12.7, @supabase/supabase-js 2.117.2, @tabler/icons-react 3.48, dompurify 3.4.16, jose 6.2.12, react/react-dom 19.3.0, @types/react(-dom) 19.3, zod 4.6.5, swr 2.5.1, tailwind-merge 3.7, oxlint 1.85, prettier 3.9.9, playwright 1.63 y resto de patch/minor de devDeps. Excluidos majors con breaking changes (@sentry/nextjs v11, framer-motion v13, vitest v5, dotenv v18). Validado: lint, type-check, 626 tests, build y react-doctor 100/100; npm audit sin vulnerabilidades.

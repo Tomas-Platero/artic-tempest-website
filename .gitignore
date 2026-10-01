@@ -144,6 +144,7 @@ scripts/add-raid.js
 eslint.json
 .atl/
 .agents/
+odd/
 
 # Sentry Config File
 .env.sentry-build-plugin
