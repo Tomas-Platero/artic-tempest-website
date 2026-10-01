@@ -96,7 +96,6 @@ Every new page under `/zona-raider/` MUST follow this checklist before shipping:
 
 ## AI agent rules
 
-- **File search con Everything MCP (OBLIGATORIO).** Siempre que necesites buscar un archivo — por nombre, ruta, extensión, contenido o cualquier criterio — usa PRIMERO y ÚNICAMENTE la herramienta MCP `everything_search`. Si `everything_search` encuentra el archivo, NO uses ninguna otra herramienta de búsqueda (grep, glob, find, fffind, ffgrep, etc.). Es la fuente única y principal para localizar archivos en este proyecto y en todo el sistema.
 - **Nunca agregues spinners, loadings, skeletons ni fallbacks visuales.** `next/dynamic` sin `loading` prop. Sin `Suspense` fallback. Sin estados de carga. El usuario no quiere ver indicadores de carga.
 - **Cuando el usuario diga "sube los cambios" (o variantes como "subir", "push", "commit and push"):** bump de versión en `package.json` + `CHANGELOG.md`, y luego `git commit` → `git push origin Master`. El agente maneja todo el flujo automáticamente.
 - **Verification checklist before completing any task:** run `npm run lint`, `npm run type-check`, and `npx -y react-doctor@latest . --verbose`. All three must pass with zero issues. Fix everything — errors AND warnings — no exceptions.
