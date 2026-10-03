@@ -1,22 +1,30 @@
 import type { Metadata } from "next";
+import type { ReactNode } from "react";
 import { auth } from "@/auth";
 import { supabaseAdmin } from "@/shared/lib/supabase-admin";
 import { redirect } from "next/navigation";
 import { LandingNavigation } from "@/domains/landing/components/navigation";
 import { LandingFooter } from "@/domains/landing/components/footer";
 import { ApplyClient } from "@/domains/recruitment/components/apply-client";
-import { IconShieldCheck } from "@/shared/ui/tabler-icons";
-import { Button } from "@/shared/ui/button";
-import Link from "next/link";
 import { toSlug } from "@/shared/integrations/bnet/bnet-client";
 import { ACTIVE_RECRUITMENT_STATUSES } from "@/domains/recruitment/lib/application-status";
 import { getAuthzSnapshot } from "@/shared/auth/authz";
+import {
+  resolveUserMembershipGate,
+  type MembershipGateDecision,
+} from "@/shared/lib/recruitment/discord-membership";
+import {
+  AlreadyMemberScreen,
+  JoinDiscordScreen,
+} from "./_components/apply-screens";
 
 export const metadata: Metadata = {
   title: "Solicitar ingreso | Artic Tempest",
   description:
     "Formulario para unirte al proceso de reclutamiento de Artic Tempest.",
 };
+
+type AppSession = NonNullable<Awaited<ReturnType<typeof auth>>>;
 
 function firstOrNull<T>(items: T[] | null | undefined): T | null {
   return items && items.length > 0 ? (items[0] ?? null) : null;
@@ -64,19 +72,21 @@ function resolveIsMember({
   return hasGuildCharacter && !(canSimulate && simulate === "true");
 }
 
-export default async function ApplyPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ simulate?: string }>;
-}) {
-  const [{ simulate }, session] = await Promise.all([searchParams, auth()]);
+type GuildMatch = { data: Array<{ id: string }> | null };
+type GuildNameMatch = {
+  data: Array<{
+    character_name?: string | null;
+    realm_slug?: string | null;
+  }> | null;
+};
 
-  if (!session) {
-    redirect(
-      `/login?redirectPath=${encodeURIComponent("/reclutamiento/apply")}`,
-    );
-  }
-
+/**
+ * Everything the page needs, gathered in one place.
+ *
+ * Split out of the component so the render reads as a decision instead of as a
+ * sequence of queries, and so the two membership rules can be read side by side.
+ */
+async function loadApplyPageData(session: AppSession, simulate?: string) {
   const [
     { data: existingApps },
     { data: bnetCharacters },
@@ -104,33 +114,26 @@ export default async function ApplyPage({
       .eq("category", "wow_class"),
   ]);
 
-  const existingApp = firstOrNull(existingApps);
-
+  const characters = bnetCharacters || [];
   const authz = await getAuthzSnapshot(session);
-
-  // 4. Verificar si alguno de sus personajes ya está vinculado al roster
   const canSimulate = authz.route.internalAdmin;
 
+  // Primera barrera: ¿su personaje ya está en el roster de la hermandad?
   const characterKeys = new Set(
-    (bnetCharacters || []).map((character) => {
+    characters.map((character) => {
       const realmSlug =
         character.realm_slug ||
         (typeof character.realm === "string" ? toSlug(character.realm) : "");
-
       return `${character.name?.trim().toLowerCase()}::${realmSlug.trim().toLowerCase()}`;
     }),
   );
 
   const characterIds: string[] = [];
   const characterNameSet = new Set<string>();
-  for (const character of bnetCharacters || []) {
-    if (character.id) {
-      characterIds.push(character.id);
-    }
+  for (const character of characters) {
+    if (character.id) characterIds.push(character.id);
     const trimmedName = character.name?.trim();
-    if (trimmedName) {
-      characterNameSet.add(trimmedName);
-    }
+    if (trimmedName) characterNameSet.add(trimmedName);
   }
   const characterNames = [...characterNameSet];
 
@@ -157,18 +160,82 @@ export default async function ApplyPage({
     ]);
 
   const hasGuildCharacter = resolveHasGuildCharacter({
-    profileMatchCount: guildProfileMatch.data?.length,
-    characterIdMatchCount: guildCharacterIdMatch.data?.length,
-    nameMatches: guildNameMatch.data,
+    profileMatchCount: (guildProfileMatch as GuildMatch).data?.length,
+    characterIdMatchCount: (guildCharacterIdMatch as GuildMatch).data?.length,
+    nameMatches: (guildNameMatch as GuildNameMatch).data,
     characterKeys,
   });
 
-  // Permitir saltar la comprobación solo si tiene permiso para simular Y viene con ?simulate=true
+  // Saltar la comprobación de roster solo con permiso de simular Y ?simulate=true.
   const isMember = resolveIsMember({
     hasGuildCharacter,
     canSimulate,
     simulate,
   });
+
+  // Segunda barrera, independiente: Discord no permite saltarse la privacidad de DMs
+  // de un usuario, así que sin servidor en común el bot no puede avisarle de nada
+  // (medido: 3/3 dentro del servidor recibieron su DM, 0/4 fuera). Solo se consulta a
+  // quien va a ver el formulario, no a quien ya es del roster.
+  let discordGate: MembershipGateDecision = { allowed: true, reason: "member" };
+
+  if (!isMember) {
+    discordGate = await resolveUserMembershipGate({
+      userId: session.user.id,
+      isTest: false,
+      simulate: simulate === "true",
+      internalAdmin: canSimulate,
+    });
+  }
+
+  return {
+    existingApp: firstOrNull(existingApps),
+    characters,
+    questions,
+    classConstants,
+    canSimulate,
+    isMember,
+    discordGate,
+  };
+}
+
+export default async function ApplyPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ simulate?: string }>;
+}) {
+  const [{ simulate }, session] = await Promise.all([searchParams, auth()]);
+
+  if (!session) {
+    redirect(
+      `/login?redirectPath=${encodeURIComponent("/reclutamiento/apply")}`,
+    );
+  }
+
+  const data = await loadApplyPageData(session, simulate);
+
+  // Un miembro del roster no envía solicitud; si además ya tiene una en curso, se le
+  // lleva a su estado en vez de a la pantalla informativa.
+  if (!data.isMember && data.existingApp) {
+    redirect("/reclutamiento/apply-en-curso");
+  }
+
+  let content: ReactNode;
+
+  if (data.isMember) {
+    content = <AlreadyMemberScreen canSimulate={data.canSimulate} />;
+  } else if (!data.discordGate.allowed) {
+    content = <JoinDiscordScreen />;
+  } else {
+    content = (
+      <ApplyClient
+        user={session.user}
+        characters={resolveList(data.characters)}
+        questions={resolveList(data.questions)}
+        classConstants={resolveList(data.classConstants)}
+      />
+    );
+  }
 
   return (
     <div className="min-h-dvh bg-zinc-950 flex flex-col animate-fade-in animate-duration-slow motion-reduce:animate-none">
@@ -185,50 +252,7 @@ export default async function ApplyPage({
             </p>
           </div>
 
-          {isMember ? (
-            <div className="bg-card/20 border border-white/5 rounded-3xl p-12 text-center animate-in fade-in slide-in-from-bottom-4 duration-700">
-              <div className="size-20 rounded-2xl bg-emerald-500/10 flex items-center justify-center mx-auto mb-6">
-                <IconShieldCheck className="size-10 text-emerald-500" />
-              </div>
-              <h2 className="text-2xl font-semibold text-white uppercase tracking-tight mb-4">
-                Ya formas parte de nosotros
-              </h2>
-              <p className="text-white/60 text-sm max-w-md mx-auto leading-relaxed mb-10">
-                Detectamos que ya tienes un rango activo en Artic Tempest. No es
-                necesario que envíes una solicitud de reclutamiento.
-              </p>
-              <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-                <Link href="/">
-                  <Button
-                    size="lg"
-                    className="rounded-full font-bold px-10 h-14 active:scale-95 "
-                  >
-                    Volver a la web
-                  </Button>
-                </Link>
-                {canSimulate && (
-                  <Link href="/reclutamiento/apply?simulate=true">
-                    <Button
-                      variant="outline"
-                      size="lg"
-                      className="rounded-full font-bold px-10 h-14 border-white/10 hover:bg-white/5 active:scale-95 "
-                    >
-                      Simular Apply
-                    </Button>
-                  </Link>
-                )}
-              </div>
-            </div>
-          ) : existingApp ? (
-            redirect("/reclutamiento/apply-en-curso")
-          ) : (
-            <ApplyClient
-              user={session.user}
-              characters={resolveList(bnetCharacters)}
-              questions={resolveList(questions)}
-              classConstants={resolveList(classConstants)}
-            />
-          )}
+          {content}
         </div>
       </main>
       <LandingFooter />

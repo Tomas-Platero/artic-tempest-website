@@ -7,6 +7,10 @@ import { ACTIVE_RECRUITMENT_STATUSES } from "@/domains/recruitment/lib/applicati
 import { publishRecruitmentBotEvent } from "@/shared/lib/recruitment/bot-events";
 import { resolveDiscordUserIdForApplication } from "@/shared/lib/recruitment/active-application";
 import { notifyApplicationCore } from "@/shared/lib/recruitment/notify-apply-core";
+import {
+	resolveUserMembershipGate,
+	MEMBERSHIP_REQUIRED_MESSAGE,
+} from "@/shared/lib/recruitment/discord-membership";
 
 const RATE_LIMIT_WINDOW_MS = 5 * 60 * 1000;
 const MAX_SUBMISSIONS_PER_WINDOW = 2;
@@ -199,6 +203,30 @@ export async function submitApplicationCore(
 				ok: false,
 				status: 400,
 				error: `El campo requerido "${missingRequired.id}" no fue contestado`,
+			};
+		}
+
+		// Policy gate. Discord offers no way to bypass a user's DM privacy, so an
+		// applicant who shares no guild with the bot can never be notified: measured
+		// on real notifications, 3/3 members received their DM and 0/4 non-members did.
+		// This lives here rather than only in the page because a direct POST to the
+		// submit endpoint must not be able to skip it.
+		const gate = await resolveUserMembershipGate({
+			userId,
+			isTest,
+			simulate,
+			internalAdmin,
+		});
+
+		if (!gate.allowed) {
+			console.warn(
+				`[Recruitment:Submit] Blocked submission for user ${userId}: ${gate.reason}`,
+			);
+
+			return {
+				ok: false,
+				status: 403,
+				error: MEMBERSHIP_REQUIRED_MESSAGE,
 			};
 		}
 
