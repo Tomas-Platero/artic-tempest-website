@@ -200,9 +200,12 @@ async function loadApplyPageData(session: AppSession, simulate?: string) {
 export default async function ApplyPage({
   searchParams,
 }: {
-  searchParams: Promise<{ simulate?: string }>;
+  searchParams: Promise<{ simulate?: string; preview?: string }>;
 }) {
-  const [{ simulate }, session] = await Promise.all([searchParams, auth()]);
+  const [{ simulate, preview }, session] = await Promise.all([
+    searchParams,
+    auth(),
+  ]);
 
   if (!session) {
     redirect(
@@ -212,15 +215,23 @@ export default async function ApplyPage({
 
   const data = await loadApplyPageData(session, simulate);
 
+  // Vista previa para staff. La pantalla de Discord solo la ve quien NO está en el
+  // servidor, así que un oficial —que sí está— no tiene forma de comprobarla de
+  // ningún otro modo. Esto solo cambia el render: no exime de la barrera y el envío
+  // sigue bloqueado si no está dentro.
+  const previewingJoinDiscord = data.canSimulate && preview === "discord";
+
   // Un miembro del roster no envía solicitud; si además ya tiene una en curso, se le
   // lleva a su estado en vez de a la pantalla informativa.
-  if (!data.isMember && data.existingApp) {
+  if (!previewingJoinDiscord && !data.isMember && data.existingApp) {
     redirect("/reclutamiento/apply-en-curso");
   }
 
   let content: ReactNode;
 
-  if (data.isMember) {
+  if (previewingJoinDiscord) {
+    content = <JoinDiscordScreen preview />;
+  } else if (data.isMember) {
     content = <AlreadyMemberScreen canSimulate={data.canSimulate} />;
   } else if (!data.discordGate.allowed) {
     content = <JoinDiscordScreen />;
@@ -231,6 +242,7 @@ export default async function ApplyPage({
         characters={resolveList(data.characters)}
         questions={resolveList(data.questions)}
         classConstants={resolveList(data.classConstants)}
+        discordVerified={data.discordGate.reason === "member"}
       />
     );
   }

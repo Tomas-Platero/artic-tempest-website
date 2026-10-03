@@ -3,16 +3,6 @@ import 'server-only';
 import { getGuildCredentials } from '@/shared/auth/credentials';
 import { supabaseAdmin } from '@/shared/lib/supabase-admin';
 
-/**
- * Public, permanent invite to the guild.
- *
- * Needed because Discord offers no way to bypass a user's DM privacy: if an
- * applicant shares no guild with the bot, no notification can reach them. Being in
- * the server is the only thing that unblocks the conversation, so this link is the
- * remedy the apply flow points at.
- */
-export const DISCORD_PUBLIC_INVITE_URL = 'https://discord.gg/artictempest';
-
 export const MEMBERSHIP_REQUIRED_MESSAGE =
   'Para enviar tu solicitud necesitas estar en el servidor de Discord de Artic Tempest: es el canal por el que un oficial se pone en contacto contigo.';
 

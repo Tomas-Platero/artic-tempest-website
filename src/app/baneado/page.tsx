@@ -3,6 +3,7 @@ import { auth } from '@/auth';
 import { Button } from "@/shared/ui/button";
 import Link from "next/link";
 import { IconAlertTriangle } from "@/shared/ui/tabler-icons";
+import { DISCORD_PUBLIC_INVITE_URL } from "@/shared/lib/discord-links";
 
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = {
@@ -76,7 +77,7 @@ export default async function BannedPage() {
             className="border-white/30 text-white hover:bg-white/10"
           >
             <a
-              href="https://discord.com/invite/artictempest"
+              href={DISCORD_PUBLIC_INVITE_URL}
               target="_blank"
               rel="noreferrer"
             >

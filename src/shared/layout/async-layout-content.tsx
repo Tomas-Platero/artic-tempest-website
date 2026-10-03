@@ -9,6 +9,7 @@ import { GoogleAnalyticsConsent } from "@/shared/components/google-analytics-con
 import { FloatingActionsWrapper } from "@/shared/layout/floating-actions-wrapper";
 import { RouteEnhancements } from "@/shared/layout/route-enhancements";
 import { serializeJsonLd } from "@/shared/seo/json-ld-serializer";
+import { DISCORD_PUBLIC_INVITE_URL } from "@/shared/lib/discord-links";
 import Script from "next/script";
 
 interface AsyncLayoutContentProps {
@@ -35,7 +36,7 @@ export async function AsyncLayoutContent({ nonce }: AsyncLayoutContentProps) {
 									sameAs: [
 										"https://x.com/artictempestWoW",
 										"https://raider.io/guilds/eu/dun-modr/Artic%20Tempest",
-										"https://discord.gg/artictempest",
+										DISCORD_PUBLIC_INVITE_URL,
 										"https://www.twitch.tv/artictempest",
 										"https://www.warcraftlogs.com/guild/id/507584",
 									],

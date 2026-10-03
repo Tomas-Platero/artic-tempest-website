@@ -31,8 +31,7 @@ import {
 	getScrollBehavior,
 	usePrefersReducedMotion,
 } from "@/shared/lib/use-prefers-reduced-motion";
-
-const DISCORD_INVITE_URL = "https://discord.artictempest.es/";
+import { DISCORD_PUBLIC_INVITE_URL } from "@/shared/lib/discord-links";
 
 /** Safe JSON parse that never throws — returns { ok, data } or { ok, error }. */
 function tryParseJSON(
@@ -99,6 +98,8 @@ type Props = {
 	questions: Question[];
 	classConstants: any[];
 	submissionStatus?: "pending" | "simulated";
+	/** True when the applicant's Discord membership was confirmed against the guild. */
+	discordVerified: boolean;
 };
 
 type WizardState = {
@@ -198,6 +199,7 @@ export function ApplyClient({
 	questions,
 	classConstants,
 	submissionStatus = "pending",
+	discordVerified,
 }: Props) {
 	const router = useRouter();
 	const draftKey = `recruitment-apply-draft:${user?.id ?? "anonymous"}`;
@@ -387,6 +389,8 @@ export function ApplyClient({
 	return (
 		<LazyMotion features={domAnimation}>
 			<div className="space-y-8">
+				<DiscordCheckBanner verified={discordVerified} />
+
 				<DraftControlsBanner
 					hasDraft={hasDraft}
 					onSaveDraft={() => {
@@ -470,6 +474,57 @@ export function ApplyClient({
 	);
 }
 
+/**
+ * Makes the Discord requirement visible while filling the form, instead of it being
+ * an invisible precondition: the applicant sees that membership was checked.
+ *
+ * `verified: false` means the guild could not be reached and the gate failed open.
+ * It is shown as such rather than hidden, because the applicant is then the one who
+ * may end up unreachable.
+ */
+function DiscordCheckBanner({ verified }: { verified: boolean }) {
+	return (
+		<div
+			className={`flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-2xl border ${
+				verified
+					? "border-emerald-500/20 bg-emerald-500/[0.06]"
+					: "border-amber-500/20 bg-amber-500/[0.06]"
+			}`}
+		>
+			<div className="flex items-start gap-3">
+				{verified ? (
+					<IconCheck className="size-4 mt-0.5 shrink-0 text-emerald-400" />
+				) : (
+					<IconAlertCircle className="size-4 mt-0.5 shrink-0 text-amber-400" />
+				)}
+				<div>
+					<p className="text-sm font-bold text-white">
+						{verified
+							? "Estás en el Discord de Artic Tempest"
+							: "No hemos podido comprobar tu Discord"}
+					</p>
+					<p className="text-xs text-zinc-400">
+						{verified
+							? "Es el canal por el que un oficial se pondrá en contacto contigo para la entrevista."
+							: "Para que un oficial pueda contactarte es obligatorio estar en el servidor. Entra y vuelve a cargar esta página."}
+					</p>
+				</div>
+			</div>
+			{!verified && (
+				<Button asChild variant="outline" className="rounded-xl shrink-0">
+					<a
+						href={DISCORD_PUBLIC_INVITE_URL}
+						target="_blank"
+						rel="noopener noreferrer"
+					>
+						Entrar al servidor
+					</a>
+				</Button>
+			)}
+		</div>
+	);
+}
+
 function ApplySuccessState({ onGoHome }: { onGoHome: () => void }) {
 	const prefersReducedMotion = usePrefersReducedMotion();
 
@@ -496,7 +551,7 @@ function ApplySuccessState({ onGoHome }: { onGoHome: () => void }) {
 					</Button>
 					<Button asChild className="rounded-xl">
 						<a
-							href={DISCORD_INVITE_URL}
+							href={DISCORD_PUBLIC_INVITE_URL}
 							target="_blank"
 							rel="noopener noreferrer"
 						>
