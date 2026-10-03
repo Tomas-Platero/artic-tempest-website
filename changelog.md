@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.12.2
+
+- style(reclutamiento): el bloqueo por no estar en el servidor explica el motivo (ATW-50) — tanto la pantalla de `/reclutamiento/apply` como el error 403 de la API dicen ahora explícitamente que estar en el servidor es **obligatorio porque es el canal por el que un oficial se pone en contacto con el aplicante**, en lugar de dejarlo implícito. Ajuste de copy sobre el cambio de 1.12.1, que todavía no estaba desplegado.
+
 ## 1.12.1
 
 - feat(reclutamiento): exigir estar en el servidor de Discord antes de aplicar (ATW-50) — Discord no ofrece ninguna forma de saltarse la privacidad de DMs de un usuario, así que un aplicante que no comparte servidor con el bot no puede recibir ningún aviso. Medido sobre los avisos reales de producción: **3/3 destinatarios que están en el servidor tienen su DM con mensajes y 0/4 de los que están fuera lo tienen vacío**, abriéndose el canal de DM correctamente en ambos casos — el bloqueo está en la entrega, no en abrir el canal. Como más de la mitad de los destinatarios estaban fuera, se elige el arreglo estructural en vez de seguir detectando el fallo después: quien no esté en el servidor ya no puede enviar la solicitud. La barrera vive en `submitApplicationCore` y no solo en la página, para que un POST directo a `/api/recruitment/submit` no pueda saltársela (responde 403 con un mensaje claro), y la página muestra una pantalla con el enlace de invitación público en lugar del formulario. La barrera **no** se aplica al self-test ni a la simulación de admin, para no tumbar la monitorización diaria de Statuspage: el cron envía desde la cuenta del dueño del personaje de prueba, que no tiene por qué estar en el servidor. Falla **abierta** cuando no se puede consultar Discord —un corte no puede dejar el formulario inutilizable— y cerrada solo ante una respuesta negativa confirmada, porque el chat web sigue siendo la fuente de verdad del mensaje.

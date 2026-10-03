@@ -63,9 +63,11 @@ export function JoinDiscordScreen() {
         Únete a nuestro Discord
       </h2>
       <p className="text-white/60 text-sm max-w-md mx-auto leading-relaxed mb-4">
-        La entrevista y el seguimiento de tu solicitud se hacen por Discord, y
-        necesitamos poder escribirte por privado. Si no estás en el servidor,
-        tus mensajes no te llegarán.
+        Para enviar tu solicitud es{" "}
+        <strong className="text-white">obligatorio</strong> estar en el servidor
+        de Discord de Artic Tempest. Es el canal por el que un oficial se pone
+        en contacto contigo para la entrevista: si no estás dentro, no podemos
+        escribirte y tu solicitud se queda sin respuesta.
       </p>
       <p className="text-white/60 text-sm max-w-md mx-auto leading-relaxed mb-10">
         Entra con el botón de abajo y vuelve a esta página para enviar tu

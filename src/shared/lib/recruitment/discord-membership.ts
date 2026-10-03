@@ -14,7 +14,7 @@ import { supabaseAdmin } from '@/shared/lib/supabase-admin';
 export const DISCORD_PUBLIC_INVITE_URL = 'https://discord.gg/artictempest';
 
 export const MEMBERSHIP_REQUIRED_MESSAGE =
-  'Necesitas unirte al servidor de Discord de Artic Tempest antes de enviar tu solicitud.';
+  'Para enviar tu solicitud necesitas estar en el servidor de Discord de Artic Tempest: es el canal por el que un oficial se pone en contacto contigo.';
 
 /**
  * Bounded lookup: this runs inline on the chat send path, so a hanging Discord
