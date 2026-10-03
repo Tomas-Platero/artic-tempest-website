@@ -113,12 +113,7 @@ async function fetchGuildMembershipForUser(
 }
 
 export type MembershipGateReason =
-  | 'member'
-  | 'exempt_test'
-  | 'exempt_simulate'
-  | 'unknown'
-  | 'not_in_server'
-  | 'no_discord_account';
+  'member' | 'exempt_test' | 'unknown' | 'not_in_server' | 'no_discord_account';
 
 export type MembershipGateDecision = {
   allowed: boolean;
@@ -133,17 +128,10 @@ export type MembershipGateDecision = {
 export async function resolveUserMembershipGate(input: {
   userId: string;
   isTest: boolean;
-  simulate: boolean;
-  internalAdmin: boolean;
 }): Promise<MembershipGateDecision> {
   const status = await fetchGuildMembershipForUser(input.userId);
 
-  return resolveMembershipGate({
-    ...status,
-    isTest: input.isTest,
-    simulate: input.simulate,
-    internalAdmin: input.internalAdmin,
-  });
+  return resolveMembershipGate({ ...status, isTest: input.isTest });
 }
 
 /**
@@ -155,18 +143,17 @@ export async function resolveUserMembershipGate(input: {
  */
 export function resolveMembershipGate(input: {
   isTest: boolean;
-  simulate: boolean;
-  internalAdmin: boolean;
   hasDiscordAccount: boolean | null;
   inGuild: boolean | null;
 }): MembershipGateDecision {
-  // Test runs and admin simulations are exempt. The daily Statuspage self-test
-  // submits from the test character's owner, who is not necessarily in the server,
-  // and blocking it would take the monitoring down with it.
+  // Only test runs are exempt, because the daily Statuspage self-test submits from
+  // the test character's owner, who is not necessarily in the server; blocking it
+  // would take the monitoring down with it.
+  //
+  // An admin simulating an apply is deliberately NOT exempt. An officer is in the
+  // server anyway, so the exemption would change nothing in practice — its only
+  // real effect was hiding this gate from whoever was testing it.
   if (input.isTest) return { allowed: true, reason: 'exempt_test' };
-  if (input.simulate && input.internalAdmin) {
-    return { allowed: true, reason: 'exempt_simulate' };
-  }
 
   if (input.hasDiscordAccount === false) {
     return { allowed: false, reason: 'no_discord_account' };

@@ -183,8 +183,6 @@ async function loadApplyPageData(session: AppSession, simulate?: string) {
     discordGate = await resolveUserMembershipGate({
       userId: session.user.id,
       isTest: false,
-      simulate: simulate === "true",
-      internalAdmin: canSimulate,
     });
   }
 

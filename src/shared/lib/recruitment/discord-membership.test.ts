@@ -3,8 +3,6 @@ import { resolveMembershipGate } from './discord-membership';
 
 const base = {
   isTest: false,
-  simulate: false,
-  internalAdmin: false,
   hasDiscordAccount: true,
   inGuild: true,
 };
@@ -64,29 +62,6 @@ describe('resolveMembershipGate', () => {
         inGuild: false,
       }),
     ).toEqual({ allowed: true, reason: 'exempt_test' });
-  });
-
-  it('exempts an admin simulation', () => {
-    expect(
-      resolveMembershipGate({
-        ...base,
-        simulate: true,
-        internalAdmin: true,
-        inGuild: false,
-      }),
-    ).toEqual({ allowed: true, reason: 'exempt_simulate' });
-  });
-
-  it('does not exempt a plain user who passes ?simulate=true', () => {
-    // `simulate` alone is not a bypass: it only counts with the admin permission.
-    expect(
-      resolveMembershipGate({
-        ...base,
-        simulate: true,
-        internalAdmin: false,
-        inGuild: false,
-      }),
-    ).toEqual({ allowed: false, reason: 'not_in_server' });
   });
 
   it('checks a definite negative before the unknown cases', () => {

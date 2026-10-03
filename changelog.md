@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.12.3
+
+- fix(reclutamiento): la simulación de apply ya no se salta la barrera de Discord (ATW-50) — el modo `?simulate=true` eximía de la comprobación de pertenencia al servidor, así que **el oficial que probaba el flujo se saltaba el paso nuevo y no llegaba a verlo nunca**: justo la persona a la que había que enseñárselo. La exención no aportaba nada en la práctica, porque un oficial ya está en el servidor y habría pasado la barrera igualmente; su único efecto real era ocultar el gate. Ahora la única exención es `isTest`, que existe para el self-test diario: el cron envía desde la cuenta del dueño del personaje de prueba, que puede no estar en el servidor, y bloquearlo tumbaría la monitorización de Statuspage. Verificado que `recruitment_test_channel_id` está configurado en producción, así que el self-test sigue exento por esa vía (commit `5b1b06f0` → `1.12.2`).
+
 ## 1.12.2
 
 - style(reclutamiento): el bloqueo por no estar en el servidor explica el motivo (ATW-50) — tanto la pantalla de `/reclutamiento/apply` como el error 403 de la API dicen ahora explícitamente que estar en el servidor es **obligatorio porque es el canal por el que un oficial se pone en contacto con el aplicante**, en lugar de dejarlo implícito. Ajuste de copy sobre el cambio de 1.12.1, que todavía no estaba desplegado.

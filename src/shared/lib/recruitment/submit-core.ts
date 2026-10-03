@@ -211,12 +211,7 @@ export async function submitApplicationCore(
 		// on real notifications, 3/3 members received their DM and 0/4 non-members did.
 		// This lives here rather than only in the page because a direct POST to the
 		// submit endpoint must not be able to skip it.
-		const gate = await resolveUserMembershipGate({
-			userId,
-			isTest,
-			simulate,
-			internalAdmin,
-		});
+		const gate = await resolveUserMembershipGate({ userId, isTest });
 
 		if (!gate.allowed) {
 			console.warn(
