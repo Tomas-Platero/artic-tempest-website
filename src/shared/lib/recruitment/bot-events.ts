@@ -42,16 +42,28 @@ export type RecruitmentBotEvent =
       content: string;
     };
 
+/**
+ * Queues an event for the Discord bot to pick up.
+ *
+ * Returns the created row id so a delivery can be linked to it, or the failure
+ * reason. Callers that do not track delivery may keep ignoring the result, but a
+ * failure must never be silent when the caller does care.
+ */
+export type PublishBotEventResult =
+  { ok: true; id: string } | { ok: false; error: string };
+
 export async function publishRecruitmentBotEvent(
   event: RecruitmentBotEvent,
-): Promise<void> {
+): Promise<PublishBotEventResult> {
   try {
-    const { error } = await supabaseAdmin
+    const { data, error } = await supabaseAdmin
       .from('recruitment_bot_events')
       .insert({
         type: event.type,
         payload: event,
-      });
+      })
+      .select('id')
+      .single();
 
     if (error) {
       console.error(
@@ -59,12 +71,16 @@ export async function publishRecruitmentBotEvent(
         event.type,
         error,
       );
+      return { ok: false, error: error.message };
     }
-  } catch (err) {
+
+    return { ok: true, id: data.id };
+  } catch (err: any) {
     console.error(
       '[Recruitment:BotEvents] Failed to publish event:',
       event.type,
       err,
     );
+    return { ok: false, error: err?.message ?? String(err) };
   }
 }

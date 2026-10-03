@@ -2,10 +2,22 @@ import { NextResponse } from 'next/server';
 import { auth } from '@/auth';
 import { supabaseAdmin } from '@/shared/lib/supabase-admin';
 import { getAuthzSnapshot } from '@/shared/auth/authz';
-import {
-  publishRecruitmentBotEvent,
-} from '@/shared/lib/recruitment/bot-events';
+import { publishTrackedNotification } from '@/shared/lib/recruitment/notify-with-delivery';
+import { getDeliveriesByMessageIds } from '@/shared/lib/recruitment/discord-deliveries';
+import type { RecruitmentDelivery } from '@/shared/lib/recruitment/delivery-status';
 import { resolveDiscordUserIdForApplication } from '@/shared/lib/recruitment/active-application';
+
+/**
+ * `new URL()` throws a TypeError on malformed input, so it is kept behind a guard
+ * instead of being called on the raw request target.
+ */
+function parseRequestUrl(req: Request): URL | null {
+  try {
+    return new URL(req.url);
+  } catch {
+    return null;
+  }
+}
 
 export async function GET(req: Request) {
   const session = await auth();
@@ -13,8 +25,12 @@ export async function GET(req: Request) {
     return NextResponse.json({ error: 'No autenticado' }, { status: 401 });
   }
 
-  const { searchParams } = new URL(req.url);
-  const applicationId = searchParams.get('applicationId');
+  const url = parseRequestUrl(req);
+  if (!url) {
+    return NextResponse.json({ error: 'Petición inválida' }, { status: 400 });
+  }
+
+  const applicationId = url.searchParams.get('applicationId');
 
   if (!applicationId) {
     return NextResponse.json(
@@ -38,7 +54,8 @@ export async function GET(req: Request) {
     }
 
     const authz = await getAuthzSnapshot(session);
-    const roleLevel = (authz.roleSlug ?? session.user?.roleLevel ?? '').toLowerCase?.() ?? '';
+    const roleLevel =
+      (authz.roleSlug ?? session.user?.roleLevel ?? '').toLowerCase?.() ?? '';
     const isOfficial = ['gm', 'officer'].includes(roleLevel);
     const isApplicant = session.user.id === application.user_id;
 
@@ -47,7 +64,7 @@ export async function GET(req: Request) {
     }
 
     const PAGE_SIZE = 50;
-    const cursor = new URL(req.url).searchParams.get('cursor');
+    const cursor = url.searchParams.get('cursor');
 
     let query = supabaseAdmin
       .from('application_messages')
@@ -67,7 +84,26 @@ export async function GET(req: Request) {
     if (msgError) throw msgError;
 
     // Devolver en orden cronológico ascendente (los más antiguos primero)
-    return NextResponse.json((messages || []).reverse());
+    const rows = [...(messages || [])].reverse();
+
+    // El estado de entrega es información interna: el aplicante ve el mensaje,
+    // no si a él mismo le falló el aviso por Discord.
+    if (!isOfficial) {
+      return NextResponse.json(rows);
+    }
+
+    const deliveries = await getDeliveriesByMessageIds(
+      rows.map((message: { id: string }) => message.id),
+    );
+
+    return NextResponse.json(
+      rows.map((message: { id: string }) => ({
+        ...message,
+        delivery:
+          (deliveries.get(message.id) as RecruitmentDelivery | undefined) ??
+          null,
+      })),
+    );
   } catch (error: any) {
     console.error('GET Chat Error:', error);
     return NextResponse.json(
@@ -123,7 +159,8 @@ export async function POST(req: Request) {
 
     // 2. Check permissions
     const authz = await getAuthzSnapshot(session);
-    const senderRoleLevel = (authz.roleSlug ?? session.user?.roleLevel ?? '').toLowerCase?.() ?? '';
+    const senderRoleLevel =
+      (authz.roleSlug ?? session.user?.roleLevel ?? '').toLowerCase?.() ?? '';
     const isOfficial = ['gm', 'officer'].includes(senderRoleLevel);
     const isApplicant = session.user.id === application.user_id;
 
@@ -146,32 +183,50 @@ export async function POST(req: Request) {
     const { data: savedMsg, error: saveError } = await supabaseAdmin
       .from('application_messages')
       .insert(insertPayload)
-      .select('*, author:profiles(discord_username, discord_avatar, role_level)')
+      .select(
+        '*, author:profiles(discord_username, discord_avatar, role_level)',
+      )
       .single();
 
     if (saveError) throw saveError;
+
+    // A staff message is a notification to the applicant. Its delivery is
+    // recorded so the chat can show whether Discord actually accepted it,
+    // instead of the silent success we used to return.
+    let delivery: RecruitmentDelivery | null = null;
 
     if (isOfficial) {
       const applicantDiscordUserId =
         await resolveDiscordUserIdForApplication(applicationId);
 
-      if (applicantDiscordUserId) {
-        void publishRecruitmentBotEvent({
+      delivery = await publishTrackedNotification({
+        applicationId,
+        kind: 'chat_message',
+        recipientKind: 'applicant',
+        recipientDiscordId: applicantDiscordUserId,
+        buildEvent: (recipientDiscordId) => ({
           type: 'recruitment.chat.message',
           applicationId,
           messageId: savedMsg.id,
           authorId: session.user.id,
           content: normalizedContent,
           attachments: Array.isArray(attachments) ? attachments : undefined,
-          applicantDiscordUserId,
-          officerName: session.user.username ?? savedMsg.author?.discord_username ?? 'Staff',
+          applicantDiscordUserId: recipientDiscordId,
+          officerName:
+            session.user.username ??
+            savedMsg.author?.discord_username ??
+            'Staff',
           officerRoleLabel: session.user.roleLabel ?? '',
           createdAt: savedMsg.created_at,
-        });
-      }
+        }),
+      });
     }
 
-    return NextResponse.json({ success: true, message: savedMsg });
+    return NextResponse.json({
+      success: true,
+      message: savedMsg,
+      delivery,
+    });
   } catch (err: any) {
     console.error('POST Chat Error:', err);
     return NextResponse.json({ error: err.message }, { status: 500 });
