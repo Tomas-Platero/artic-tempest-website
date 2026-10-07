@@ -59,6 +59,13 @@ export const revalidate = 120;
 
 const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://artictempest.es";
 
+// Time-dependent, so it stays out of the component body: `react(purity)` flags
+// impure calls made during render, and this value moves with the clock. The page
+// is regenerated every `revalidate` seconds anyway.
+function isSeason2Released(seasonStartMs: number | null): boolean {
+	return seasonStartMs !== null && Date.now() >= seasonStartMs;
+}
+
 export default async function ProgressPage() {
 	const [timeline, sporefall, staticData] = await Promise.all([
 		getRaidTimeline(),
@@ -66,8 +73,7 @@ export default async function ProgressPage() {
 		fetchRaiderIoRaidingStaticData(11),
 	]);
 	const season2Start = getRaidStartDate(staticData, SEASON_2_RAID_SLUG);
-	const now = new Date().getTime();
-	const isSeason2Visible = season2Start !== null && now >= season2Start;
+	const isSeason2Visible = isSeason2Released(season2Start);
 	const season2Timeline = isSeason2Visible
 		? await getRaidTimeline(SEASON_2_RAID_SLUG)
 		: null;

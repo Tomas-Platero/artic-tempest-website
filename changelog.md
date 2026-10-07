@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.12.6
+
+- fix(progreso): el bump de `oxlint` (1.85.0 → 1.87.0) estrena la regla `react(purity)`, y esta era la **única** línea del repo que la disparaba — `const now = new Date().getTime()` vivía en el cuerpo de `ProgressPage()`, y una llamada impura durante el render es justo lo que la regla persigue. La comprobación se muda a `isSeason2Released()`, a nivel de módulo: el mismo patrón que ya usaba `src/domains/landing/components/footer.tsx:25`, que no dispara la regla. El comportamiento no cambia — la página sigue decidiendo si la Season 2 está publicada comparando el reloj contra la fecha de apertura de la raid, con `revalidate = 120` por encima. Se aisló antes de arreglarlo corriendo `npx oxlint@1.85.0` contra el mismo código y diferenciando las dos listas de warnings: salía este y ningún otro. Los 10 warnings restantes (9 `react(set-state-in-effect)` y 1 `react(immutability)` en `turnstile-widget.tsx:81`) ya estaban en `HEAD` y no se tocan aquí, porque cerrarlos es reestructurar efectos en componentes de producción, no un chore de dependencias.
+
 ## 1.12.5
 
 - chore(deps): se declaran las dos dependencias fantasma y se borran las cuatro que no se usaban — `server-only` (importada en 15 módulos) y `domhandler` (el tipo `AnyNode` de `src/app/noticias/[slug]/page.tsx`) no figuraban en `package.json` y solo se resolvían de forma transitiva: `domhandler` cuelga de `cheerio` y `server-only` de la copia compilada de Next. Al limpiar el árbol de `cheerio` o cambiar el alias de Next, ambas desaparecerían y el build se rompería sin que nadie hubiera tocado el import. En el otro sentido, `ws`, `bufferutil`, `utf-8-validate` y `@vercel/flags-core` estaban declaradas como dependencia directa con **0 referencias** en `src/` (la única aparición de «ws» era `wss://ws-us3.pusher.com` en la CSP), así que se eliminan junto con sus dos entradas en `allowScripts`, que solo servían para autorizar sus scripts de compilación nativa.
