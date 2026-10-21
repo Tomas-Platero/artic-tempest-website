@@ -336,6 +336,12 @@ export async function buildAuthOptions(): Promise<AuthOptions> {
 			DiscordProvider({
 				clientId: credentials.discord_client_id || credentials.discord_app_id,
 				clientSecret: credentials.discord_client_secret,
+				// Discord now returns the RFC 9207 `iss` claim on the OAuth callback.
+				// next-auth's bundled Discord provider declares no issuer, so
+				// openid-client aborts the callback with "issuer must be configured
+				// on the issuer" unless we state it explicitly. Value must match
+				// `issuer` in Discord's /.well-known/openid-configuration.
+				issuer: "https://discord.com",
 				authorization: {
 					params: { scope: credentials.discord_requested_scopes },
 				},

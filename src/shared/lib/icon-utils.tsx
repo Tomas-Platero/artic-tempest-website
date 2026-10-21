@@ -1,10 +1,16 @@
 "use client";
 
-import React, { type ComponentType } from "react";
+import React, {
+	type ComponentProps,
+	type ComponentType,
+} from "react";
 import { IconCircle } from "@/shared/ui/tabler-icons";
 import { ALL_ICONS_MAP } from "./icons-list";
 
-export const ICON_MAP: Record<string, any> = {
+// Props accepted by any icon in the curated barrel (Tabler-compatible).
+type IconComponentProps = ComponentProps<typeof IconCircle>;
+
+export const ICON_MAP: Record<string, ComponentType<IconComponentProps>> = {
 	...ALL_ICONS_MAP,
 	IconCircle,
 };
@@ -57,8 +63,11 @@ const resolveFromCandidates = (candidates: string[]) => {
 };
 
 // Cache for icons loaded from the full Tabler barrel
-const tablerIconCache = new Map<string, ComponentType<any>>();
-const fallbackCache = new Map<string, ComponentType<Record<string, any>>>();
+const tablerIconCache = new Map<string, ComponentType<IconComponentProps>>();
+const fallbackCache = new Map<
+	string,
+	ComponentType<IconComponentProps>
+>();
 let tablerModulePromise: Promise<any> | null = null;
 
 function getTablerModule() {
@@ -71,17 +80,21 @@ function getTablerModule() {
 function LazyTablerIcon({
 	name,
 	...props
-}: { name: string } & Record<string, any>) {
-	const [Comp, setComp] = React.useState<ComponentType<any> | null>(
+}: { name: string } & IconComponentProps) {
+	const [Comp, setComp] = React.useState<ComponentType<IconComponentProps> | null>(
 		() => tablerIconCache.get(name) ?? null,
 	);
 
+	// If the icon name changes, pick it up from the cache during render
+	// (React-endorsed state adjustment when a prop changes).
+	const [prevName, setPrevName] = React.useState(name);
+	if (prevName !== name) {
+		setPrevName(name);
+		setComp(() => tablerIconCache.get(name) ?? null);
+	}
+
 	React.useEffect(() => {
-		if (tablerIconCache.has(name)) {
-			// react-doctor-disable-next-line
-			setComp(() => tablerIconCache.get(name)!);
-			return;
-		}
+		if (tablerIconCache.has(name)) return;
 
 		let cancelled = false;
 		getTablerModule()
@@ -132,7 +145,7 @@ export function getIconByName(name: string | null | undefined) {
 	if (!fallbackCache.has(fallbackCacheKey)) {
 		fallbackCache.set(
 			fallbackCacheKey,
-			function TablerIconWrapper(props: Record<string, any>) {
+			function TablerIconWrapper(props: IconComponentProps) {
 				return <LazyTablerIcon name={raw} {...props} />;
 			},
 		);

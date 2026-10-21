@@ -32,12 +32,11 @@ export function NotificationBell() {
 	}, [status]);
 
 	useEffect(() => {
-		if (status !== "authenticated") {
-			// react-doctor-disable-next-line
-			setUnreadCount(0);
-			return;
-		}
+		if (status !== "authenticated") return;
 
+		// Initial read after mount: `unreadCount` is server data that can only be
+		// known once /api/notifications answers — nothing to derive during render.
+		// react-doctor-disable-next-line react-hooks-js/set-state-in-effect
 		void fetchUnreadCount();
 
 		const handleNotificationUpdate = () => {

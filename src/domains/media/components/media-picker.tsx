@@ -46,6 +46,53 @@ function FileTypeIcon({
 	return <IconDownload className="size-12 text-white/30" />;
 }
 
+/**
+ * Loads the root folder list of the media picker.
+ *
+ * Staleness/loading is *derived* during render (`key !== uploadKey`) instead of
+ * tracked with a `loading` flag, so the effect only ever writes fetched data:
+ * no synchronous setState and no try/catch/finally for React Compiler to lower.
+ */
+function useMediaFolders(
+	open: boolean,
+	currentBucket: string | null,
+	uploadKey: number,
+) {
+	// `key` is the uploadKey the list was loaded for, so a stale list (or an
+	// unloaded one) can be detected during render instead of with a setState.
+	const [folders, setFolders] = useState<{
+		key: number;
+		items: MediaFolder[];
+	} | null>(null);
+
+	useEffect(() => {
+		if (!open || currentBucket !== null) return;
+
+		let cancelled = false;
+
+		fetch("/api/media/folders")
+			.then((r) => (r.ok ? r.json() : { folders: [] }))
+			.then((data) => {
+				if (!cancelled) {
+					setFolders({ key: uploadKey, items: data.folders ?? [] });
+				}
+			})
+			.catch(() => {
+				// ignore fetch errors — the grid simply stays empty
+				if (!cancelled) setFolders({ key: uploadKey, items: [] });
+			});
+
+		return () => {
+			cancelled = true;
+		};
+	}, [open, currentBucket, uploadKey]);
+
+	return {
+		foldersLoading: folders?.key !== uploadKey,
+		folderItems: folders?.items ?? [],
+	};
+}
+
 export function MediaPicker({
 	bucket: _bucket,
 	onSelect,
@@ -56,35 +103,13 @@ export function MediaPicker({
 }: MediaPickerProps) {
 	// Navigation state: null = show folders, string = inside a bucket
 	const [currentBucket, setCurrentBucket] = useState<string | null>(null);
-	const [folders, setFolders] = useState<MediaFolder[]>([]);
-	const [foldersLoading, setFoldersLoading] = useState(false);
 	const [uploadKey, setUploadKey] = useState(0);
 
-	// Fetch folders list when showing root
-	useEffect(() => {
-		if (!open || currentBucket !== null) return;
-
-		let cancelled = false;
-		// react-doctor-disable-next-line
-		setFoldersLoading(true);
-
-		fetch("/api/media/folders")
-			.then((r) => {
-				if (!r.ok) throw new Error("Request failed");
-				return r.json();
-			})
-			.then((data) => {
-				if (!cancelled) setFolders(data.folders ?? []);
-			})
-			.catch(() => {})
-			.finally(() => {
-				if (!cancelled) setFoldersLoading(false);
-			});
-
-		return () => {
-			cancelled = true;
-		};
-	}, [open, currentBucket, uploadKey]);
+	const { foldersLoading, folderItems } = useMediaFolders(
+		open,
+		currentBucket,
+		uploadKey,
+	);
 
 	// Files for current bucket
 	const { files, isLoading } = useMediaFiles({
@@ -168,11 +193,11 @@ export function MediaPicker({
 										/>
 									))}
 								</div>
-							) : folders.length === 0 ? (
+							) : folderItems.length === 0 ? (
 								<EmptyState message="No hay carpetas disponibles." />
 							) : (
 								<div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-									{folders.map((folder) => (
+									{folderItems.map((folder) => (
 										<button
 											key={folder.id}
 											type="button"

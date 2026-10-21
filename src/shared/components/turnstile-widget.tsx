@@ -74,6 +74,30 @@ export const TurnstileWidget = forwardRef<
 		},
 	}));
 
+	function renderWidget() {
+		const container = document.getElementById(WIDGET_CONTAINER_ID);
+		if (!container || !window.turnstile || !SITE_KEY) return;
+
+		if (widgetIdRef.current) {
+			window.turnstile.remove(widgetIdRef.current);
+		}
+
+		widgetIdRef.current = window.turnstile.render(`#${WIDGET_CONTAINER_ID}`, {
+			sitekey: SITE_KEY,
+			theme: "dark",
+			appearance: "always",
+			callback: (token: string) => {
+				callbacksRef.current.onVerify(token);
+			},
+			"error-callback": () => {
+				callbacksRef.current.onError?.();
+			},
+			"expired-callback": () => {
+				callbacksRef.current.onExpire?.();
+			},
+		});
+	}
+
 	useEffect(() => {
 		if (!SITE_KEY) return;
 
@@ -125,30 +149,6 @@ export const TurnstileWidget = forwardRef<
 			}
 		};
 	}, []);
-
-	function renderWidget() {
-		const container = document.getElementById(WIDGET_CONTAINER_ID);
-		if (!container || !window.turnstile || !SITE_KEY) return;
-
-		if (widgetIdRef.current) {
-			window.turnstile.remove(widgetIdRef.current);
-		}
-
-		widgetIdRef.current = window.turnstile.render(`#${WIDGET_CONTAINER_ID}`, {
-			sitekey: SITE_KEY,
-			theme: "dark",
-			appearance: "always",
-			callback: (token: string) => {
-				callbacksRef.current.onVerify(token);
-			},
-			"error-callback": () => {
-				callbacksRef.current.onError?.();
-			},
-			"expired-callback": () => {
-				callbacksRef.current.onExpire?.();
-			},
-		});
-	}
 
 	if (!SITE_KEY) return null;
 
