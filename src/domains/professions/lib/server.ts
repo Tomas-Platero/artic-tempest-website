@@ -298,26 +298,7 @@ async function getVisibleRosterMembers() {
       .in('category', ['wow_class']),
   ]);
 
-  let rawRanks = ranksRes.data;
-  const ranksError = ranksRes.error;
-
-  const shouldFallback =
-    (ranksError &&
-      (ranksError.code === 'PGRST204' ||
-        ranksError.message.toLowerCase().includes('schema cache'))) ||
-    (!ranksError && (!rawRanks || rawRanks.length === 0));
-
-  if (shouldFallback) {
-    const { data: fallbackRanks } = await supabaseAdmin
-      .from('guild_rank_visibility')
-      .select('rank_id, is_visible');
-
-    rawRanks = (fallbackRanks || []).map((rank: any) => ({
-      rank: rank.rank_id,
-      name: DEFAULT_RANK_NAMES[rank.rank_id] || `Rank ${rank.rank_id}`,
-      is_visible: rank.is_visible,
-    }));
-  }
+  const rawRanks = ranksRes.data;
 
   const visibilityMap: Record<number, boolean> = {};
   const rankNames: Record<number, string> = {};

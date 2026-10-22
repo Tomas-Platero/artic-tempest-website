@@ -63,24 +63,34 @@ async function checkBnetMembership(userId: string): Promise<boolean> {
 	// 1. Obtener personajes vinculados del usuario (de nuestra tabla bnet_characters)
 	const { data: bnetChars } = await supabaseAdmin
 		.from("bnet_characters")
-		.select("name, realm")
+		.select("name, realm_slug")
 		.eq("user_id", userId);
 
-	if (!bnetChars || bnetChars.length === 0) return false;
+	// guild_members guarda `character_name` + `realm_slug`, así que sin slug no hay
+	// con qué comparar (los personajes antiguos creados antes de realm_slug no sirven).
+	const characters = (bnetChars ?? []).filter(
+		(c) => c.name && c.realm_slug,
+	);
+
+	if (characters.length === 0) return false;
 
 	// 2. Consultar si alguno de esos personajes está en el Roster (guild_members)
 	// Nota: Podríamos hacer un JOIN o un rpc, pero para simplicidad inmediata:
-	const { count } = await supabaseAdmin
+	const { count, error } = await supabaseAdmin
 		.from("guild_members")
 		.select("*", { count: "exact", head: true })
 		.in(
-			"name",
-			bnetChars.map((c) => c.name),
+			"character_name",
+			characters.map((c) => c.name),
 		)
 		.in(
-			"realm",
-			bnetChars.map((c) => c.realm),
+			"realm_slug",
+			characters.map((c) => c.realm_slug),
 		);
+
+	if (error) {
+		throw new Error(`No se pudo comprobar el roster: ${error.message}`);
+	}
 
 	return (count ?? 0) > 0;
 }
@@ -140,38 +150,42 @@ export async function verifyUser(userId: string): Promise<SyncResult> {
 	const isActuallyInGuild = discordValid || bnetValid;
 
 	if (isActuallyInGuild) {
-		// Definimos prioridad de roles de la App
-		const rolePriority: Record<RoleLevel, number> = {
-			gm: 6,
-			officer: 5,
-			raider: 4,
-			trial: 3,
-			member: 2,
-			invitado: 1,
-		};
-
 		// 1. Empezamos con el rol básico si están en Discord o tienen Bnet vinculado
 		newRole = "member";
 
-		// 2. Si hay roles de Discord, buscamos si alguno mapea a un nivel superior
+		// 2. Si hay roles de Discord, buscamos si alguno mapea a un nivel superior.
+		// La prioridad sale de app_roles para que los roles creados desde
+		// Configuración → Roles (p. ej. artic-mod) también se apliquen aquí.
 		if (discordRoles.length > 0) {
-			const { data: mappings } = await supabaseAdmin
-				.from("app_discord_roles")
-				.select("role_id, level");
+			const [{ data: mappings }, { data: appRoles }] = await Promise.all([
+				supabaseAdmin.from("app_discord_roles").select("role_id, level"),
+				supabaseAdmin.from("app_roles").select("level, priority"),
+			]);
 
 			if (mappings && mappings.length > 0) {
-				let highestMappedLevel: RoleLevel = "member";
+				const priorityByLevel = new Map<string, number>(
+					(appRoles ?? []).map((role) => [role.level, Number(role.priority ?? 0)]),
+				);
+				const mappingsByRoleId = new Map(
+					mappings.map((m) => [m.role_id, m.level as RoleLevel]),
+				);
 
-				const mappingsByRoleId = new Map(mappings.map((m: any) => [m.role_id, m]));
+				let highestMappedLevel: RoleLevel = "member";
 				for (const roleId of discordRoles) {
-					const mapping = mappingsByRoleId.get(roleId);
-					if (mapping) {
-						const mappedLevel = mapping.level as RoleLevel;
-						if (rolePriority[mappedLevel] > rolePriority[highestMappedLevel]) {
-							highestMappedLevel = mappedLevel;
-						}
+					const mappedLevel = mappingsByRoleId.get(roleId);
+					if (!mappedLevel) continue;
+
+					const mappedPriority =
+						priorityByLevel.get(mappedLevel) ?? Number.NEGATIVE_INFINITY;
+					const currentPriority =
+						priorityByLevel.get(highestMappedLevel) ??
+						Number.NEGATIVE_INFINITY;
+
+					if (mappedPriority > currentPriority) {
+						highestMappedLevel = mappedLevel;
 					}
 				}
+
 				newRole = highestMappedLevel;
 			}
 		}

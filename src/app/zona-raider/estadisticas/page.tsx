@@ -31,29 +31,7 @@ async function getRoster() {
   ]);
 
   const { data: members } = membersResult;
-
-  // Try guild_ranks first
-  let { data: rawRanks, error: ranksError } = ranksResult;
-
-  // Fallback if table doesn't exist, cache is stale, OR it's empty
-  const shouldFallback =
-    (ranksError &&
-      (ranksError.code === "PGRST204" ||
-        ranksError.message.includes("schema cache"))) ||
-    (!ranksError && (!rawRanks || rawRanks.length === 0));
-
-  if (shouldFallback) {
-    const { data: fallbackRanks } = await supabaseAdmin
-      .from("guild_rank_visibility")
-      .select("rank_id, is_visible");
-
-    if (fallbackRanks && fallbackRanks.length > 0) {
-      rawRanks = fallbackRanks.map((r) => ({
-        rank: (r as any).rank_id ?? (r as any).rank,
-        is_visible: r.is_visible,
-      }));
-    }
-  }
+  const rawRanks = ranksResult.data;
 
   // Build a map of rank visibility from the database
   const visibilityMap: Record<number, boolean> = {};
