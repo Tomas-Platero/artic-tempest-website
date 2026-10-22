@@ -396,7 +396,6 @@ async function swapPriorities(
 						priority: role.priority,
 						color: role.color,
 						canAccessZonaRaider: role.can_access_zona_raider,
-						canUseRaiderApp: role.can_use_raider_app,
 						isSuperAdmin: role.is_super_admin,
 						isAdmin: role.is_admin,
 					}),

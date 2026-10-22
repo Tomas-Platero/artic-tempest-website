@@ -18,7 +18,6 @@ function normalizeRoles(rows: any[] | null): AppRole[] {
 		priority: Number(row.priority ?? 0),
 		color: row.color ?? "#94a3b8",
 		can_access_zona_raider: Boolean(row.can_access_zona_raider),
-		can_use_raider_app: Boolean(row.can_use_raider_app),
 		is_super_admin: Boolean(row.is_super_admin),
 		is_admin: Boolean(row.is_admin),
 	}));
@@ -37,7 +36,7 @@ export async function fetchAppRoles(force = false): Promise<AppRole[]> {
 	const { data, error } = await supabaseAdmin
 		.from("app_roles")
 		.select(
-			"level,label,description,priority,color,can_access_zona_raider,can_use_raider_app,is_super_admin,is_admin",
+			"level,label,description,priority,color,can_access_zona_raider,is_super_admin,is_admin",
 		)
 		.order("priority", { ascending: false });
 
@@ -68,13 +67,6 @@ export async function isSuperAdmin(level: RoleLevel | null | undefined) {
 	return Boolean(meta?.is_super_admin);
 }
 
-export async function canUseRaiderApp(level: RoleLevel | null | undefined) {
-	if (!level) return false;
-	if (level.trim().toLowerCase() === "gm") return true;
-	const meta = await getRoleMeta(level);
-	return Boolean(meta?.can_use_raider_app);
-}
-
 export async function isRoleAtLeast(current: RoleLevel, required: RoleLevel) {
 	const targetPriority = await getRolePriority(required);
 	if (targetPriority === Number.NEGATIVE_INFINITY) return false;
@@ -86,7 +78,6 @@ export async function getRoleFlags(level: RoleLevel) {
 	const meta = await getRoleMeta(level);
 	return {
 		canAccessZonaRaider: Boolean(meta?.can_access_zona_raider),
-		canUseRaiderApp: Boolean(meta?.can_use_raider_app),
 		isSuperAdmin: Boolean(meta?.is_super_admin),
 		isAdmin: Boolean(meta?.is_admin),
 		priority: meta?.priority ?? Number.NEGATIVE_INFINITY,

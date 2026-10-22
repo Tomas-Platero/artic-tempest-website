@@ -8,7 +8,7 @@ export async function GET() {
 	const { data, error } = await supabaseAdmin
 		.from("app_roles")
 		.select(
-			"level,label,description,priority,color,can_access_zona_raider,can_use_raider_app,is_super_admin,is_admin",
+			"level,label,description,priority,color,can_access_zona_raider,is_super_admin,is_admin",
 		)
 		.order("priority", { ascending: false });
 
@@ -48,7 +48,6 @@ export async function POST(req: Request) {
 		const priority = Number(body.priority ?? 0);
 		const color = (body.color || "#94a3b8").toString().trim();
 		const canAccessZonaRaider = Boolean(body.canAccessZonaRaider);
-		const canUseRaiderApp = Boolean(body.canUseRaiderApp);
 		const isSuperAdmin = Boolean(body.isSuperAdmin);
 		const isAdmin = Boolean(body.isAdmin);
 		const isGmRole = level === "gm";
@@ -71,12 +70,11 @@ export async function POST(req: Request) {
 				priority,
 				color,
 				can_access_zona_raider: isGmRole ? true : canAccessZonaRaider,
-				can_use_raider_app: isGmRole ? true : canUseRaiderApp,
 				is_super_admin: isGmRole ? true : isSuperAdmin,
 				is_admin: isGmRole ? true : isAdmin,
 			})
 			.select(
-				"level,label,description,priority,color,can_access_zona_raider,can_use_raider_app,is_super_admin,is_admin",
+				"level,label,description,priority,color,can_access_zona_raider,is_super_admin,is_admin",
 			)
 			.single();
 
@@ -98,7 +96,6 @@ export async function POST(req: Request) {
 				priority,
 				color,
 				canAccessZonaRaider,
-				canUseRaiderApp,
 				isSuperAdmin,
 				isAdmin,
 			},

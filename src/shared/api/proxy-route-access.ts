@@ -36,17 +36,11 @@ const DISCORD_WEBHOOK_ROUTES = [] as const;
 const ADMIN_ROUTES = [withPrefix("/api/admin/")] as const;
 
 const RAIDER_ONLY_ROUTES = [
-	withExact("/api/desktop/raider-app/status"),
-	withExact("/api/desktop/raider-rules/status"),
 	withExact("/api/raider-rules/accept"),
 ] as const;
 
 const INTEGRATION_ROUTES = [
-	withExact("/api/guild/constants"),
 	withExact("/api/curseforge-addon"),
-	withExact("/api/desktop-notifications"),
-	withExact("/api/desktop/session"),
-	withExact("/api/desktop/professions"),
 	withPrefix("/api/bot/"),
 ] as const;
 

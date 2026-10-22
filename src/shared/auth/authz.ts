@@ -37,7 +37,6 @@ type AppAuthzSnapshotRow = {
 	role_slug: string | null;
 	role_label: string | null;
 	authz_scope: AuthzScope | null;
-	can_use_raider_app: boolean | null;
 	is_super_admin: boolean | null;
 	is_banned: boolean | null;
 	ban_reason: string | null;
@@ -70,7 +69,6 @@ function buildFallbackSnapshot(session: Session): AuthzSnapshot {
 		null) as RoleLevel | null;
 	const resolvedFlags: RoleFlags = session.user.roleFlags ?? {
 		canAccessZonaRaider: false,
-		canUseRaiderApp: false,
 		isSuperAdmin: false,
 		isAdmin: false,
 		priority: Number.NEGATIVE_INFINITY,
@@ -107,7 +105,6 @@ function buildFallbackSnapshot(session: Session): AuthzSnapshot {
 function buildPublicSnapshot(): AuthzSnapshot {
 	const roleFlags: RoleFlags = {
 		canAccessZonaRaider: false,
-		canUseRaiderApp: false,
 		isSuperAdmin: false,
 		isAdmin: false,
 		priority: Number.NEGATIVE_INFINITY,
@@ -146,7 +143,7 @@ export async function getAuthzSnapshot(
 		const { data } = await supabaseAdmin
 			.from("app_authz_snapshot")
 			.select(
-				"user_id, discord_user_id, role_slug, role_label, authz_scope, can_use_raider_app, is_super_admin, is_banned, ban_reason, ban_expires_at",
+				"user_id, discord_user_id, role_slug, role_label, authz_scope, is_super_admin, is_banned, ban_reason, ban_expires_at",
 			)
 			.eq("user_id", session.user.id)
 			.maybeSingle();
@@ -183,9 +180,6 @@ export async function getAuthzSnapshot(
 				route: resolveRouteAccess(scope, banned),
 				roleFlags: {
 					...roleFlags,
-					canUseRaiderApp:
-						Boolean(snapshotRow.can_use_raider_app) ||
-						Boolean(roleFlags.canUseRaiderApp),
 					isSuperAdmin:
 						Boolean(snapshotRow.is_super_admin) ||
 						Boolean(roleFlags.isSuperAdmin),

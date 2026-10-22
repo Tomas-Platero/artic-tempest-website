@@ -19,7 +19,6 @@ export default function robots(): MetadataRoute.Robots {
           "/login/",
           "/mis-personajes/",
           "/notificaciones/",
-          "/desktop-auth/",
 
           // ── Admin y sistema ─────────────────────────────────────
           "/admin/",

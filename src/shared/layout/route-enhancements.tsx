@@ -42,8 +42,6 @@ const PwaPrompt = dynamic(
 	{ ssr: false },
 );
 
-const CALLBACK_ONLY_PATHS = new Set(["/desktop-auth"]);
-
 const STATIC_LEGAL_PATHS = new Set([
 	"/aviso-legal",
 	"/cookies",
@@ -54,17 +52,11 @@ const STATIC_LEGAL_PATHS = new Set([
 	"/login",
 	"/login-mantenimiento",
 	"/baneado",
-	"/desktop-auth",
 ]);
 
 export function RouteEnhancements() {
 	const pathname = usePathname();
-	const isCallbackOnly = pathname ? CALLBACK_ONLY_PATHS.has(pathname) : false;
 	const isStaticLegal = pathname ? STATIC_LEGAL_PATHS.has(pathname) : false;
-
-	if (isCallbackOnly) {
-		return null;
-	}
 
 	const isProd = process.env.NODE_ENV === "production";
 

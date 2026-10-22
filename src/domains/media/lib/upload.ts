@@ -59,7 +59,6 @@ export const ALLOWED_MIME_TYPES_BY_BUCKET: Record<string, string[]> = {
 	"weekly-vault": IMAGE_MIMES,
 	roster_ranks_images: IMAGE_MIMES,
 	feedback_attachments: [...IMAGE_MIMES, "application/pdf"],
-	app_updates: IMAGE_MIMES,
 };
 
 export function generateStoragePath(_bucket: string, fileName: string): string {

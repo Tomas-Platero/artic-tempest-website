@@ -22,7 +22,6 @@ const ROLE_FLAGS_BY_ROLE: Record<
 > = {
 	authenticated: {
 		canAccessZonaRaider: false,
-		canUseRaiderApp: false,
 		isSuperAdmin: false,
 		isAdmin: false,
 		priority: 0,
@@ -31,7 +30,6 @@ const ROLE_FLAGS_BY_ROLE: Record<
 	},
 	raider: {
 		canAccessZonaRaider: true,
-		canUseRaiderApp: true,
 		isSuperAdmin: false,
 		isAdmin: false,
 		priority: 10,
@@ -40,7 +38,6 @@ const ROLE_FLAGS_BY_ROLE: Record<
 	},
 	admin: {
 		canAccessZonaRaider: true,
-		canUseRaiderApp: true,
 		isSuperAdmin: true,
 		isAdmin: true,
 		priority: 100,
@@ -49,7 +46,6 @@ const ROLE_FLAGS_BY_ROLE: Record<
 	},
 	banned: {
 		canAccessZonaRaider: false,
-		canUseRaiderApp: false,
 		isSuperAdmin: false,
 		isAdmin: false,
 		priority: -Infinity,

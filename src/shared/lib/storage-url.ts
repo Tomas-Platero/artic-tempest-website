@@ -16,7 +16,6 @@ export const PUBLIC_PROXY_BUCKETS = new Set([
 	"image_boses_kills",
 	"roster_ranks_images",
 	"weekly-vault",
-	"app_updates",
 	"viserio_guide",
 ]);
 

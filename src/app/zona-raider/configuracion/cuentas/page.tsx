@@ -29,7 +29,7 @@ export default async function AccountsSettingsPage() {
 			supabaseAdmin
 				.from("app_roles")
 				.select(
-					"level,label,description,priority,color,can_access_zona_raider,can_use_raider_app,is_super_admin,is_admin",
+					"level,label,description,priority,color,can_access_zona_raider,is_super_admin,is_admin",
 				)
 				.order("priority", { ascending: false }),
 		]);

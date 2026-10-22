@@ -1,7 +1,6 @@
-import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/auth';
+import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/shared/lib/supabase-admin';
-import { enforceDesktopOrIntegrationAuth } from '@/shared/api/desktop-auth';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -57,15 +56,12 @@ function isValidModId(value: unknown): value is number {
 
 export async function POST(request: NextRequest) {
   const session = await auth();
-  if (!session) {
-    const authResult = await enforceDesktopOrIntegrationAuth(request);
-    if (!('kind' in authResult)) {
-      return authResult;
-    }
+  if (!session?.user?.id) {
+    return NextResponse.json(
+      { error: 'No autorizado', code: 'UNAUTHORIZED' },
+      { status: 401 },
+    );
   }
-
-  const desktopSessionToken = request.headers.get('x-desktop-session-token')?.trim();
-  const authorization = request.headers.get('authorization')?.trim();
 
   let payload: CurseforgePayload;
   try {
@@ -95,10 +91,6 @@ export async function POST(request: NextRequest) {
     'curseforge-addon',
     {
       body: { modId: payload.modId },
-      headers: {
-        ...(desktopSessionToken ? { 'x-desktop-session-token': desktopSessionToken } : {}),
-        ...(authorization ? { Authorization: authorization } : {}),
-      },
     },
   );
 

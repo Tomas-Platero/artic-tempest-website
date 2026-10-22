@@ -15,14 +15,12 @@ export type AppRole = {
 	priority: number;
 	color: string;
 	can_access_zona_raider: boolean;
-	can_use_raider_app: boolean;
 	is_super_admin: boolean;
 	is_admin: boolean;
 };
 
 export type RoleFlags = {
 	canAccessZonaRaider: boolean;
-	canUseRaiderApp: boolean;
 	isSuperAdmin: boolean;
 	isAdmin: boolean;
 	priority: number;

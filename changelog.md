@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.12.14
+
+- chore(retirada): **se retira la app de escritorio (raider app) del proyecto** — el cliente externo dejó de mantenerse (último instalador subido el 2026-05-25) y no tenía ningún consumidor dentro del repo.
+  - **Código**: se eliminan las 4 rutas `/api/desktop/*` (`session`, `raider-app/status`, `raider-rules/status`, `professions`), `/api/desktop-notifications`, `/api/guild/constants`, la página `/desktop-auth`, la librería `src/shared/api/desktop-auth.ts` y la entrada `desktop-auth` de `knip.json`. `/api/curseforge-addon` se queda (lo usa `normativa-raider`) pero pasa a exigir sesión normal, sin el camino por token de escritorio. `src/proxy.ts` pierde el identificador de rate limit por token de escritorio y sus prefijos; `/desktop-auth` sale de `robots.ts` y de las rutas con layout especial.
+  - **Flag `can_use_raider_app`**: eliminado de `AppRole`/`RoleFlags`, de `getRoleFlags()`/`normalizeRoles()`, de la vista `app_authz_snapshot`, de todos los `select` y de los payloads de creación/edición de roles. En los 7 roles coincidía exactamente con `can_access_zona_raider`, así que no cambia ningún acceso efectivo.
+  - **Storage**: `app_updates` sale de las allowlists de `storage-url.ts` y de `upload.ts`; el bucket y sus 26 instaladores (77 MB) se eliminan por MCP.
+  - **DB** (migración `retire_raider_app`): `DROP COLUMN app_roles.can_use_raider_app`, vista `app_authz_snapshot` recreada sin esa columna y calculando `authz_scope` con `can_access_zona_raider` (antes usaba el flag de la app), y borrado del bucket `app_updates` con sus objetos.
+- Verificado: `npm run type-check` (0 errores), `npm test` (**659 tests OK**), `npm run lint` (sin hallazgos en los ficheros tocados), `npx react-doctor` (**100/100**) y `npm run build`.
+
 ## 1.12.13
 
 - fix(api): **`POST /api/uploads/recruitment` aceptaba subidas sin autenticar** — usaba la service role para escribir en el bucket `attachments` sin comprobar nada: cualquiera podía subir ficheros arbitrarios (sin límite de tamaño) a nombre de cualquier `applicationId`, incluido `anon`. Ahora exige sesión, valida que el `applicationId` exista y que quien sube sea el dueño de la solicitud o staff con permiso de reclutamiento (`settings-recruitment`), rechaza ficheros vacíos, corta en 10 MB y bloquea tipos que el navegador ejecuta como documento activo (`text/html`, `image/svg+xml`, javascript).

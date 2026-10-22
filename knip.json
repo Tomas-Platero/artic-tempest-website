@@ -24,7 +24,6 @@
     "src/domains/docs/api-catalog.ts": ["exports", "types"],
     "src/domains/professions/lib/server.ts": ["exports", "types"],
     "src/domains/recruitment/lib/application-status.ts": ["exports"],
-    "src/shared/api/desktop-auth.ts": ["exports"],
     "src/shared/auth/roles.ts": ["exports"],
     "src/shared/components/roster-table.tsx": ["exports"],
     "src/shared/components/sidebar.tsx": ["exports"],

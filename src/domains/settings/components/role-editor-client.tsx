@@ -24,6 +24,7 @@ async function doCreateRole(
   templateSource?: string | null,
 ): Promise<{ success: boolean; error?: string; data?: any }> {
   try {
+    // El payload lleva solo los flags que el rol edita: zonas y administración.
     const res = await fetch("/api/guild/roles", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -34,7 +35,6 @@ async function doCreateRole(
         priority: role.priority,
         color: role.color,
         canAccessZonaRaider: role.can_access_zona_raider,
-        canUseRaiderApp: role.can_use_raider_app,
         isSuperAdmin: role.is_super_admin,
         isAdmin: role.is_admin,
         permissionsFrom: templateSource ?? undefined,
@@ -71,7 +71,6 @@ async function doUpdateRole(
         priority: role.priority,
         color: role.color,
         canAccessZonaRaider: role.can_access_zona_raider,
-        canUseRaiderApp: role.can_use_raider_app,
         isSuperAdmin: role.is_super_admin,
         isAdmin: role.is_admin,
       }),
@@ -127,7 +126,6 @@ function useRoleEditorClient({
             priority: 100,
             color: "#60a5fa",
             can_access_zona_raider: false,
-            can_use_raider_app: false,
             is_super_admin: false,
             is_admin: false,
           }),

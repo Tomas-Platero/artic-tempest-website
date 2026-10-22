@@ -143,49 +143,15 @@ async function applyRateLimit(req: NextRequest): Promise<NextResponse | null> {
 	const bearerToken = authHeader?.startsWith("Bearer ")
 		? authHeader.slice(7).trim()
 		: null;
-	const desktopSessionToken =
-		req.headers.get("x-desktop-session-token")?.trim() || null;
-	const discordAccessToken =
-		req.headers.get("x-discord-access-token")?.trim() || null;
 
-	if (pathname.startsWith("/api/desktop/session")) {
-		maxRequests = 20;
-		windowSeconds = 60;
-		prefix = "ratelimit:artictempest:desktop:session";
-		const discordAccessToken = req.headers.get("x-discord-access-token")?.trim();
-		if (discordAccessToken) {
-			identifier = `discord:${await sha256(discordAccessToken)}`;
-		}
-	} else if (pathname.startsWith("/api/curseforge-addon")) {
+	if (pathname.startsWith("/api/curseforge-addon")) {
 		maxRequests = 30;
 		windowSeconds = 300;
-		prefix = "ratelimit:artictempest:desktop:curseforge-addon";
-		identifier = await resolveDesktopRateLimitIdentifier(
-			bearerToken,
-			desktopSessionToken,
-			discordAccessToken,
-			identifier,
-		);
-	} else if (pathname.startsWith("/api/desktop-notifications")) {
-		maxRequests = 120;
-		windowSeconds = 300;
-		prefix = "ratelimit:artictempest:desktop:notifications";
-		identifier = await resolveDesktopRateLimitIdentifier(
-			bearerToken,
-			desktopSessionToken,
-			discordAccessToken,
-			identifier,
-		);
-	} else if (pathname.startsWith("/api/desktop/")) {
-		maxRequests = 120;
-		windowSeconds = 300;
-		prefix = "ratelimit:artictempest:desktop:api";
-		identifier = await resolveDesktopRateLimitIdentifier(
-			bearerToken,
-			desktopSessionToken,
-			discordAccessToken,
-			identifier,
-		);
+		prefix = "ratelimit:artictempest:curseforge-addon";
+		if (bearerToken) {
+			const sub = extractJwtSub(bearerToken);
+			identifier = sub ? `sub:${sub}` : `token:${await sha256(bearerToken)}`;
+		}
 	}
 
 	if (pathname.startsWith("/api/auth")) {
@@ -261,27 +227,6 @@ async function sha256(value: string): Promise<string> {
 	const digest = await crypto.subtle.digest("SHA-256", input);
 	const bytes = Array.from(new Uint8Array(digest));
 	return bytes.map((byte) => byte.toString(16).padStart(2, "0")).join("");
-}
-
-async function resolveDesktopRateLimitIdentifier(
-	bearerToken: string | null,
-	desktopSessionToken: string | null,
-	discordAccessToken: string | null,
-	fallback: string,
-): Promise<string> {
-	if (desktopSessionToken) {
-		return `desktop:${await sha256(desktopSessionToken)}`;
-	}
-
-	if (discordAccessToken) {
-		return `discord:${await sha256(discordAccessToken)}`;
-	}
-	if (!bearerToken) return fallback;
-
-	const sub = extractJwtSub(bearerToken);
-	if (sub) return `sub:${sub}`;
-
-	return `token:${await sha256(bearerToken)}`;
 }
 
 function isRaiderNormativePath(pathname: string): boolean {

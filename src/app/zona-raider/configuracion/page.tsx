@@ -196,7 +196,7 @@ export default async function SettingsHubPage() {
 		{
 			title: "Noticias de la Hermandad",
 			description:
-				"Publica las noticias que aparecen en la página principal y la app de escritorio.",
+				"Publica las noticias que aparecen en la página principal.",
 			icon: IconNews,
 			href: "/zona-raider/configuracion/noticias",
 			color: "text-primary",

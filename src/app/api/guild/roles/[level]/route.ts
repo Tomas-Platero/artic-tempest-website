@@ -4,6 +4,16 @@ import { ensureAdmin } from '@/shared/auth/permissions';
 import { invalidateRolesCache } from '@/shared/auth/roles';
 import { logRoleAudit } from '@/shared/lib/role-audit.server';
 
+type AppRoleUpdate = {
+  label?: string | null;
+  description?: string | null;
+  priority?: number;
+  color?: string;
+  can_access_zona_raider?: boolean;
+  is_super_admin?: boolean;
+  is_admin?: boolean;
+};
+
 export async function PATCH(
   req: Request,
   { params }: { params: Promise<{ level: string }> },
@@ -16,13 +26,13 @@ export async function PATCH(
     const { data: currentRole } = await supabaseAdmin
       .from('app_roles')
       .select(
-        'level,label,description,priority,color,can_access_zona_raider,can_use_raider_app,is_super_admin,is_admin',
+        'level,label,description,priority,color,can_access_zona_raider,is_super_admin,is_admin',
       )
       .eq('level', normalizedLevel)
       .maybeSingle();
 
     const body = await req.json();
-    const payload: Record<string, any> = {};
+    const payload: AppRoleUpdate = {};
 
     if (body.label !== undefined)
       payload.label = body.label?.toString()?.trim() || null;
@@ -48,8 +58,6 @@ export async function PATCH(
       payload.color = body.color?.toString()?.trim() || '#94a3b8';
     if (body.canAccessZonaRaider !== undefined)
       payload.can_access_zona_raider = Boolean(body.canAccessZonaRaider);
-    if (body.canUseRaiderApp !== undefined)
-      payload.can_use_raider_app = Boolean(body.canUseRaiderApp);
     if (body.isSuperAdmin !== undefined)
       payload.is_super_admin = Boolean(body.isSuperAdmin);
     if (body.isAdmin !== undefined) payload.is_admin = Boolean(body.isAdmin);
@@ -60,7 +68,6 @@ export async function PATCH(
 
     if (isGmRole) {
       payload.can_access_zona_raider = true;
-      payload.can_use_raider_app = true;
       payload.is_super_admin = true;
     }
 
@@ -69,7 +76,7 @@ export async function PATCH(
       .update(payload)
       .eq('level', normalizedLevel)
       .select(
-        'level,label,description,priority,color,can_access_zona_raider,can_use_raider_app,is_super_admin,is_admin',
+        'level,label,description,priority,color,can_access_zona_raider,is_super_admin,is_admin',
       )
       .single();
 
@@ -126,7 +133,7 @@ export async function DELETE(
     const { data: existingRole, error: fetchError } = await supabaseAdmin
       .from('app_roles')
       .select(
-        'level,label,description,priority,color,can_access_zona_raider,can_use_raider_app,is_super_admin,is_admin',
+        'level,label,description,priority,color,can_access_zona_raider,is_super_admin,is_admin',
       )
       .eq('level', normalizedLevel)
       .maybeSingle();

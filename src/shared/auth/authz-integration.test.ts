@@ -54,7 +54,6 @@ vi.mock("@/shared/auth/roles", () => ({
 	isSuperAdmin: vi.fn().mockResolvedValue(false),
 	getRoleFlags: vi.fn().mockResolvedValue({
 		canAccessZonaRaider: false,
-		canUseRaiderApp: false,
 		isSuperAdmin: false,
 		priority: 0,
 		label: "Miembro",
@@ -74,12 +73,12 @@ describeOrSkip("authz integration — role-based access", () => {
 			expect(getApiRouteBoundary("/api/guild/news")).toBe("public");
 		});
 
-		it("classifies /api/desktop/session as integration", () => {
-			expect(getApiRouteBoundary("/api/desktop/session")).toBe("integration");
+		it("classifies /api/curseforge-addon as integration", () => {
+			expect(getApiRouteBoundary("/api/curseforge-addon")).toBe("integration");
 		});
 
-		it("classifies /api/desktop/raider-app/status as zona-raider", () => {
-			expect(getApiRouteBoundary("/api/desktop/raider-app/status")).toBe(
+		it("classifies /api/raider-rules/accept as zona-raider", () => {
+			expect(getApiRouteBoundary("/api/raider-rules/accept")).toBe(
 				"zona-raider",
 			);
 		});
