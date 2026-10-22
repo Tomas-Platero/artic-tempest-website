@@ -28,7 +28,6 @@ export function RoleEditorRoleCard({
     description: string;
     color: string;
     access: string;
-    raider: string;
     isAdmin: string;
     superAdmin: string;
   };
@@ -126,20 +125,6 @@ export function RoleEditorRoleCard({
               checked={role.is_admin}
               onCheckedChange={(checked) => onFieldChange("is_admin", checked)}
               aria-label="Administrador del sitio"
-              disabled={role.level === "gm"}
-            />
-          </ToggleRow>
-          <ToggleRow
-            label="App Raider"
-            hint="Puede usar la app de raiders (WCL, asistencia, loot)."
-          >
-            <Switch
-              id={ids.raider}
-              checked={role.can_use_raider_app}
-              onCheckedChange={(checked) =>
-                onFieldChange("can_use_raider_app", checked)
-              }
-              aria-label="Acceso a la app de raiders"
               disabled={role.level === "gm"}
             />
           </ToggleRow>

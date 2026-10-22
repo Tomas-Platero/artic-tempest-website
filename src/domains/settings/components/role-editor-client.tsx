@@ -112,7 +112,6 @@ function useRoleEditorClient({
   const descriptionInputId = useId();
   const colorInputId = useId();
   const accessSwitchId = useId();
-  const raiderAppSwitchId = useId();
   const isAdminSwitchId = useId();
   const superAdminSwitchId = useId();
 
@@ -217,7 +216,6 @@ function useRoleEditorClient({
             description: descriptionInputId,
             color: colorInputId,
             access: accessSwitchId,
-            raider: raiderAppSwitchId,
             isAdmin: isAdminSwitchId,
             superAdmin: superAdminSwitchId,
           }}
