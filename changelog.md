@@ -1,5 +1,15 @@
 # Changelog
 
+## 1.12.11
+
+- fix(cuentas): **la ficha de cualquier cuenta devolvía «Usuario no encontrado»** — `src/app/zona-raider/configuracion/cuentas/[userId]/page.tsx` selecciona `can_access_bot_dashboard` de forma explícita, pero esa columna **no existía** en `profiles`: PostgREST respondía `42703 column profiles.can_access_bot_dashboard does not exist`, el `data` llegaba `null`, el fallback por `discord_user_id` fallaba igual y la página caía siempre en el estado vacío, así que ninguna cuenta (tampoco Myrrah, `b48b489b-8c87-4979-8fb1-fa219a155b31`) abría su ficha. Causa: la migración `00000000000007_add_bot_dashboard_access` figura como aplicada en `supabase_migrations` (`20260825050258`) pero su `ALTER TABLE` nunca llegó a la tabla real — deriva de esquema; la `00000000000008` sí estaba aplicada. Repuesta la columna con la migración `profiles_can_access_bot_dashboard` (`boolean NOT NULL DEFAULT false`, idempotente) vía Supabase MCP, verificada con el select exacto de la ficha (ahora responde 200 con la fila real). De paso repara el `PATCH /api/admin/accounts/[userId]`, que escribía esa misma columna inexistente y fallaba al marcar el acceso al dashboard del bot.
+- Validado con `npm run type-check` (exit 0) y `npm run lint` (exit 0, sin hallazgos nuevos); sin cambios de código, así que no se relanzó react-doctor.
+
+## 1.12.10
+
+- chore(roles): el editor de roles vuelve a mostrar solo los interruptores de esa pantalla (acceso a Zona Raider, Administrador y Super Admin). Se retira el interruptor extra que se había colado en 1.12.9: el flag subyacente sigue existiendo y su lógica de autorización no cambia, simplemente no se edita desde aquí.
+- Validado con `npm run lint` (exit 0, sin hallazgos en los ficheros tocados), `npm run type-check` (exit 0) y `npx react-doctor . --verbose` (**100/100, 0 issues**).
+
 ## 1.12.9
 
 - fix(roles): **el interruptor «Administrador» no se guardaba** — el editor de roles (`/zona-raider/configuracion/roles/[level]`) sí leía `role.is_admin` y lo pintaba, pero `doUpdateRole`/`doCreateRole` (`src/domains/settings/components/role-editor-client.tsx`) nunca lo enviaban en el body, así que el `PATCH /api/guild/roles/[level]` se quedaba sin ese campo y la API respondía 200 con el rol intacto: el toast decía «Rol actualizado» y el flag seguía en `false` en la DB. Se añade `isAdmin` a ambos payloads. De paso, el borrado de `app_permissions` que el `PATCH` hacía al activar admin o super admin se limita a **super admin** — un admin conserva ahora su matriz de permisos granulares, que antes se destruía en silencio al marcar la casilla.
