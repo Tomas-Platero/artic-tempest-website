@@ -187,7 +187,7 @@ async function doSendChatMessage(
 async function doUploadFile(
   file: File,
   applicationId: string,
-): Promise<{ url: string; name?: string; contentType?: string } | null> {
+): Promise<{ url: string; name?: string; contentType?: string }> {
   const form = new FormData();
   form.append("file", file);
   form.append("applicationId", applicationId);
@@ -197,7 +197,10 @@ async function doUploadFile(
       method: "POST",
       body: form,
     });
-    if (!up.ok) return null;
+    if (!up.ok) {
+      const err = await up.json().catch(() => ({}));
+      throw new Error(err?.error || "No se pudo subir el fichero");
+    }
     const json = await up.json();
     if (json?.url) {
       return {
@@ -208,8 +211,9 @@ async function doUploadFile(
     }
   } catch (err) {
     console.error("Upload failed", err);
+    throw err instanceof Error ? err : new Error("No se pudo subir el fichero");
   }
-  return null;
+  throw new Error("No se pudo subir el fichero");
 }
 
 const messageTimeFormatter = new Intl.DateTimeFormat("es-ES", {
@@ -490,12 +494,25 @@ function useApplicationChat(applicationId: string) {
       doUploadFile(f, applicationId),
     );
 
-    const results = await Promise.all(uploadTasks);
+    const settled = await Promise.allSettled(uploadTasks);
     const uploaded: Array<{
       url: string;
       name?: string;
       contentType?: string;
-    }> = results.filter((r): r is NonNullable<typeof r> => r !== null);
+    }> = [];
+
+    for (const result of settled) {
+      if (result.status === "fulfilled") {
+        uploaded.push(result.value);
+      } else {
+        toast.error("No se pudo subir un adjunto", {
+          description:
+            result.reason instanceof Error
+              ? result.reason.message
+              : "Error desconocido",
+        });
+      }
+    }
 
     if (uploaded.length > 0) {
       setAttachments((prev) => [...prev, ...uploaded]);

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { randomUUID } from "node:crypto";
+import { ensureAdmin } from "@/shared/auth/permissions";
 import {
 	buildAuthorizationUrl,
 	resolveRedirectUri,
@@ -8,6 +9,14 @@ import {
 export const runtime = "nodejs";
 
 export async function GET(req: NextRequest) {
+	// El flujo guarda tokens de la organización: solo administradores pueden iniciarlo.
+	try {
+		await ensureAdmin();
+	} catch (error) {
+		const status = (error as { status?: number })?.status ?? 403;
+		return NextResponse.json({ error: "Prohibido" }, { status });
+	}
+
 	const state = randomUUID();
 	const redirectUri = resolveRedirectUri(req.nextUrl.origin);
 	const url = buildAuthorizationUrl(redirectUri, state);

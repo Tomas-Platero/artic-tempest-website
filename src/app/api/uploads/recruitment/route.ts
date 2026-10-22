@@ -1,20 +1,92 @@
 import { NextResponse } from "next/server";
+import { auth } from "@/auth";
 import { supabaseAdmin } from "@/shared/lib/supabase-admin";
+import { getAuthzSnapshot } from "@/shared/auth/authz";
+import { getAppPermission } from "@/shared/auth/permissions";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 const BUCKET = process.env.RECRUITMENT_ATTACHMENTS_BUCKET || "attachments";
 const SIGNED_TTL_SECONDS =
 	parseInt(process.env.RECRUITMENT_ATTACHMENTS_SIGNED_TTL || "", 10) || 86400; // default 24h
+const MAX_FILE_BYTES = 10 * 1024 * 1024; // 10 MB
+// Tipos que el navegador puede renderizar como documento activo: vector de XSS
+// si el objeto acaba servido desde el dominio de storage.
+const BLOCKED_CONTENT_TYPES = new Set([
+	"text/html",
+	"application/xhtml+xml",
+	"image/svg+xml",
+	"text/javascript",
+	"application/javascript",
+]);
+
+/**
+ * Solo el solicitante dueño de la aplicación o el staff con permiso de
+ * reclutamiento pueden subir adjuntos.
+ */
+async function canUploadToApplication(
+	userId: string,
+	applicationId: string,
+	session: Awaited<ReturnType<typeof auth>>,
+): Promise<boolean> {
+	const { data: application } = await supabaseAdmin
+		.from("recruitment_applications")
+		.select("user_id")
+		.eq("id", applicationId)
+		.maybeSingle();
+
+	if (!application) return false;
+	if (application.user_id === userId) return true;
+
+	const authz = await getAuthzSnapshot(session as NonNullable<typeof session>);
+	const roleLevel = authz.roleSlug ?? session?.user?.roleLevel ?? "invitado";
+	const { canEdit } = await getAppPermission(roleLevel, "settings-recruitment");
+
+	return canEdit;
+}
 
 export async function POST(req: Request) {
 	try {
+		const session = await auth();
+		if (!session?.user?.id) {
+			return NextResponse.json({ error: "No autorizado" }, { status: 401 });
+		}
+
 		const form = await req.formData();
 		const file = form.get("file") as File | null;
 		const applicationId = (form.get("applicationId") as string) || "";
 
 		if (!file) {
 			return NextResponse.json({ error: "Falta fichero" }, { status: 400 });
+		}
+
+		if (file.size === 0) {
+			return NextResponse.json({ error: "El fichero está vacío" }, { status: 400 });
+		}
+
+		if (file.size > MAX_FILE_BYTES) {
+			return NextResponse.json(
+				{ error: "El fichero supera los 10 MB" },
+				{ status: 413 },
+			);
+		}
+
+		if (BLOCKED_CONTENT_TYPES.has((file.type || "").toLowerCase())) {
+			return NextResponse.json(
+				{ error: "Tipo de fichero no permitido" },
+				{ status: 415 },
+			);
+		}
+
+		if (!applicationId) {
+			return NextResponse.json(
+				{ error: "Falta applicationId" },
+				{ status: 400 },
+			);
+		}
+
+		if (!(await canUploadToApplication(session.user.id, applicationId, session))) {
+			return NextResponse.json({ error: "Prohibido" }, { status: 403 });
 		}
 
 		const arrayBuffer = await file.arrayBuffer();

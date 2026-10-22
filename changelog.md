@@ -1,5 +1,17 @@
 # Changelog
 
+## 1.12.13
+
+- fix(api): **`POST /api/uploads/recruitment` aceptaba subidas sin autenticar** — usaba la service role para escribir en el bucket `attachments` sin comprobar nada: cualquiera podía subir ficheros arbitrarios (sin límite de tamaño) a nombre de cualquier `applicationId`, incluido `anon`. Ahora exige sesión, valida que el `applicationId` exista y que quien sube sea el dueño de la solicitud o staff con permiso de reclutamiento (`settings-recruitment`), rechaza ficheros vacíos, corta en 10 MB y bloquea tipos que el navegador ejecuta como documento activo (`text/html`, `image/svg+xml`, javascript).
+- fix(api): el chat de reclutamiento **se tragaba los fallos de subida** — `handleFileChange` filtraba los `null` y no avisaba, así que un adjunto rechazado simplemente no aparecía. Ahora cada subida fallida muestra un toast con el motivo real que devuelve la API.
+- fix(api): **el callback OAuth de Jira se podía completar sin `state`** — la comprobación era `if (cookieState && state && state !== cookieState)`, de modo que si faltaba la cookie o el parámetro se saltaba la validación y se guardaban los tokens igualmente (CSRF sobre el vínculo de la organización). Ahora `code`, `state` y cookie son obligatorios y deben coincidir. `GET /api/jira/oauth/start` exige además sesión de administrador, porque iniciaba el flujo (y guardaba tokens) para cualquiera.
+- Auditoría del resto de la API (108 rutas):
+  - 94 llamadas `fetch` del cliente cruzadas contra los métodos que exporta cada `route.ts` → **0 rutas inexistentes y 0 métodos sin exportar**. Los 5 casos con `method` dinámico se revisaron a mano (categorías de noticias, menú, noticias, notificaciones, ranks de wowaudit): todos usan POST/PATCH/DELETE, que sí existen.
+  - Rutas sin guarda de autenticación revisadas una a una: `app-icon`, `bnet/avatar`, `images/[bucket]`, `raiderio`, `progression`, `status`, `streamers` son proxies/lecturas públicas con allowlist y validación de entrada; `desktop/session` se autentica validando el token de Discord contra la API de Discord y comprobando perfil/ban; `auth/[...nextauth]` es el handler de next-auth.
+  - Los 3 endpoints de `/api/bot/*` usan `enforceBearerToken` y las 8 entradas de `vercel.json` apuntan a rutas existentes que exigen `CRON_SECRET` (ninguna ruta de cron quedó fuera del `vercel.json`).
+  - Ninguna ruta que escriba (POST/PUT/PATCH/DELETE) queda sin guarda.
+- Validado con `npm run type-check` (exit 0), `npm run lint` (exit 0, sin hallazgos nuevos), `npx react-doctor . --verbose` (**100/100, 0 issues**) y `npm run build`.
+
 ## 1.12.12
 
 - fix(sync): **la verificación de pertenencia por Battle.net estaba rota y podía degradar a cualquiera a `invitado`** — `checkBnetMembership` (`src/domains/membership/lib/sync-engine.server.ts`) filtraba `guild_members` por `name` y `realm`, columnas que no existen (son `character_name` y `realm_slug`): PostgREST devolvía 400, el `count` llegaba `null` y la función respondía `false` siempre. Como el rol se decide con `discordValid || bnetValid`, cualquier socio cuyo refresh token de Discord fallase se quedaba en `invitado` en el cron horario de verificación aunque estuviera en el roster. Ahora se compara `bnet_characters.name`/`realm_slug` contra `guild_members.character_name`/`realm_slug` y el error de la consulta se propaga en vez de tragarse.

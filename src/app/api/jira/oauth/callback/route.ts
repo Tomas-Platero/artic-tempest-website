@@ -18,10 +18,7 @@ export async function GET(req: NextRequest) {
 	if (error) {
 		return htmlResponse(`Error de OAuth: ${error}`, 400);
 	}
-	if (!code) {
-		return htmlResponse("Falta el código de autorización.", 400);
-	}
-	if (cookieState && state && state !== cookieState) {
+	if (!code || !state || !cookieState || state !== cookieState) {
 		return htmlResponse("Estado OAuth inválido.", 400);
 	}
 
